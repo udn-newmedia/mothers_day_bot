@@ -1,0 +1,7 @@
+{
+    "require": {
+        "mpociot/botman": "^2.4",
+        "botman/driver-facebook": "^1.9",
+        "botman/botman": "^2.4"
+    }
+}
