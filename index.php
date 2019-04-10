@@ -28,8 +28,10 @@ use BotMan\BotMan\Messages\Outgoing\Question;
 use BotMan\BotMan\Messages\Outgoing\OutgoingMessage;
 use BotMan\BotMan\Messages\Outgoing\Actions\Button;
 
-require './vendor/autoload.php';
-require './conversation/CardConversation.php';
+use Grafika\Grafika;
+
+require_once './vendor/autoload.php';
+require_once './src/autoloader.php';
 
 $config = [
     // Your driver-specific configuration
@@ -46,13 +48,13 @@ DriverManager::loadDriver(\BotMan\Drivers\Facebook\FacebookImageDriver::class);
 
 // Create an instance
 $botman = BotManFactory::create($config);
-// $textBoolean = false;
-// $imageBoolean = false;
+$textBoolean = 0;
+$imageBoolean = 0;
 
-$botman->say('來寫母親節卡片吧');
-$botman->hears('hello', function (BotMan $bot) {
-  $bot->reply('hi');
-});
+// $botman->say('來寫母親節卡片吧');
+// $botman->hears('hello', function (BotMan $bot) {
+//   $bot->reply('hi');
+// });
 
 
 
@@ -64,16 +66,6 @@ $botman->hears('to mom {text}', function(BotMan $bot, $text) {
     Button::create('No')->value('text no'),
   ]));
 
-  // 如果圖文都上傳，詢問是否要開始製作卡片
-  // if ($textBoolean == true && $imageBoolean == true) {
-  //   $bot->reply(Question::create('要開始製作卡片了嗎?')->addButtons([
-  //     Button::create('Yes')->value('all yes'),
-  //     Button::create('No')->value('all no'),
-  //   ]));
-  // }
-
-
-
   // $bot->startConversation(new CardConversation);
 });
 
@@ -82,43 +74,52 @@ $botman->receivesImages(function(BotMan $bot, $images) {
       $url=$image->getUrl();
       $title=$image->getTitle();
       // $bot->reply($url);
+      $editor = Grafika::createEditor();
+      $editor->open($image1 , '1.png');
+      $editor->resizeFit($image1 , 200 , 200);
+      $editor->save($image1 , '2.png');
   }
 
   $bot->reply(Question::create('確定卡片的圖片?')->addButtons([
     Button::create('Yes')->value('image yes'),
     Button::create('No')->value('image no'),
   ]));
-
-  // 如果圖文都上傳，詢問是否要開始製作卡片
-  // if ($textBoolean == true && $imageBoolean == true) {
-  //   $bot->reply(Question::create('要開始製作卡片了嗎?')->addButtons([
-  //     Button::create('Yes')->value('all yes'),
-  //     Button::create('No')->value('all no'),
-  //   ]));
-  // }
 });
 
-
-
-
-
-
-
-
 $botman->hears('text yes', function (BotMan $bot) {
-  $bot->reply('字寫完囉');
-  // $textBoolean = true;
+  $textBoolean = 1;
+  // 如果圖文都上傳，詢問是否要開始製作卡片
+  if ($textBoolean = 1 && $imageBoolean = 1) {
+    $bot->reply(Question::create('要開始製作卡片了嗎?')->addButtons([
+      Button::create('Yes')->value('all yes'),
+      Button::create('No')->value('all no'),
+    ]));
+  } else {
+    $bot->reply('字寫完囉');
+  }
+
   // 寫進資料庫，不再寫入文字
 });
 
 $botman->hears('image yes', function (BotMan $bot) {
-  $bot->reply('照片選好囉');
-  // $imageBoolean = true;
+  $imageBoolean = 1;
+  // 如果圖文都上傳，詢問是否要開始製作卡片
+  if ($textBoolean = 1 && $imageBoolean = 1) {
+    $bot->reply(Question::create('要開始製作卡片了嗎?')->addButtons([
+      Button::create('Yes')->value('all yes'),
+      Button::create('No')->value('all no'),
+    ]));
+  } else {
+    $bot->reply('照片選好囉');
+  }
+
   // 寫進資料庫，不再寫入圖片
 });
 
 $botman->hears('all yes', function (BotMan $bot) {
   $bot->reply('全部輸入完成');
+  $textBoolean = 0;
+  $imageBoolean = 0;
   // 寫進資料庫，不再寫入文字
 });
 

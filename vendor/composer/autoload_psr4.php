@@ -22,6 +22,7 @@ return array(
     'Psr\\Container\\' => array($vendorDir . '/psr/container/src'),
     'Opis\\Closure\\' => array($vendorDir . '/opis/closure/src'),
     'Mpociot\\Pipeline\\' => array($vendorDir . '/mpociot/pipeline/src'),
+    'Grafika\\' => array($vendorDir . '/kosinix/grafika/src/Grafika'),
     'BotMan\\Drivers\\Facebook\\' => array($vendorDir . '/botman/driver-facebook/src'),
     'BotMan\\BotMan\\' => array($vendorDir . '/botman/botman/src', $vendorDir . '/mpociot/botman/src'),
 );

@@ -52,6 +52,10 @@ class ComposerStaticInitaa2b0b5dcd34323093d3a7bd8cfe3c17
         array (
             'Mpociot\\Pipeline\\' => 17,
         ),
+        'G' => 
+        array (
+            'Grafika\\' => 8,
+        ),
         'B' => 
         array (
             'BotMan\\Drivers\\Facebook\\' => 24,
@@ -123,6 +127,10 @@ class ComposerStaticInitaa2b0b5dcd34323093d3a7bd8cfe3c17
         'Mpociot\\Pipeline\\' => 
         array (
             0 => __DIR__ . '/..' . '/mpociot/pipeline/src',
+        ),
+        'Grafika\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/kosinix/grafika/src/Grafika',
         ),
         'BotMan\\Drivers\\Facebook\\' => 
         array (
