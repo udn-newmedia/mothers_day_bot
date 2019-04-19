@@ -11,6 +11,7 @@ use BotMan\BotMan\Messages\Outgoing\Actions\Button;
 use BotMan\Drivers\Facebook\Extensions\Element;
 use BotMan\Drivers\Facebook\Extensions\ElementButton;
 use BotMan\Drivers\Facebook\Extensions\GenericTemplate;
+use BotMan\Drivers\Facebook\Extensions\ListTemplate;
 
 use Grafika\Grafika;
 use Grafika\Color;
@@ -21,7 +22,7 @@ require_once './src/autoloader.php';
 $config = [
   // Your driver-specific configuration
   'facebook' => [
-    'token' => 'EAAgFGCRdh0YBANc6ZCZCxwosG3y6XOTwfPiDQsyZAWUfZApHeIAj68P3eJ5eDhrLRVkg6UUgUZBNMjHWd178mmbxRsqQFhdYWX5upn7g3PmzROAN712xghXjh4ZCGK5rgTuO6MLicKZAjKlFgbaIvxV77WJgxoA9fPXPkSbkRgZAFQZDZD',
+    'token' => 'EAAgFGCRdh0YBAEWoJPQmuxk3c8kHrwbQnAfAxL0feI3fIWd5PJT0ZCkNkgd81DCMIEQe31YPdUdektAY048u615vGGd3IKkiZChXRz4BYe2Wud0STqX8EbrEFLiLJSkTJOuK98JzRA73JncbokR3uSgmOh96dCJvuzZAzWV9wZDZD',
     'app_secret' => 'ee950085cfeacdd271ebaad5be3672aa',
     'verification'=>'happymothersdayudnforyou',
   ]
@@ -40,7 +41,14 @@ function saveImage($srcUrl, $distUrl, $fileName) {
 }
 
 function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $fbId, $float, $bot) {
+  // Card parameter
   $distPath = $userId . '_' . $float . '.png';
+  $titleArray = explode("/", $srcTitle);
+  $textArray = explode("/", $srcText);
+  $titleArrayLength = sizeof($titleArray);
+  $textArrayLength = sizeof($textArray);
+  $titleSpace = 70;
+  $textSpace = 40;
 
   // 卡片合成
   $editor = Grafika::createEditor();
@@ -59,14 +67,14 @@ function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $f
   $editor->blend($image1, $image3 , 'normal', 1, 'top-left', 0, 212);
   
   // 標題
-  $editor->text($image1, '媽咪，母親節快樂！', 44, 250, 90, null, 'fonts/ARMingB5Heavy.otf', 0);
-  $editor->text($image1, '永遠青春美麗！', 44, 250, 160, null, 'fonts/ARMingB5Heavy.otf', 0);
+  for ($i = 0; $i <= $titleArrayLength - 1; $i++) {
+    $editor->text($image1, $titleArray[$i], 44, 250, 90 + ($titleSpace * $i), null, 'fonts/ARMingB5Heavy.otf', 0);
+  } 
   
   // 內文
-  $editor->text($image1, '親愛的媽咪', 24, 45, 600, null, 'fonts/ARMingB5Medium.otf', 0);
-  $editor->text($image1, '你是我的尤加利樹', 24, 45, 640, null, 'fonts/ARMingB5Medium.otf', 0);
-  $editor->text($image1, '我是你的無尾熊', 24, 45, 680, null, 'fonts/ARMingB5Medium.otf', 0);
-  $editor->text($image1, '乖女兒 娃娃', 24, 45, 740, null, 'fonts/ARMingB5Medium.otf', 0);
+  for ($i = 0; $i <= $textArrayLength - 1; $i++) {
+    $editor->text($image1, $textArray[$i], 24, 45, 600 + ($textSpace * $i), null, 'fonts/ARMingB5Medium.otf', 0);
+  }
 
   $editor->save($image1, 'users_data/cards_dist/mothersCard_' . $distPath);
 
@@ -74,37 +82,34 @@ function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $f
 
   // 寫進資料庫
   // Database config
-  // $servername = 'localhost';
-  // $username = 'newmedia';
-  // $password = 'newmedia';
-  // $dbname = 'mothers_day_bot';
-  // $conn = new mysqli($servername, $username, $password, $dbname);
-  // mysqli_query($conn, "SET NAMES UTF8");
+  $servername = 'localhost';
+  $username = 'newmedia';
+  $password = 'newmedia';
+  $dbname = 'mothers_day_bot';
+  $conn = new mysqli($servername, $username, $password, $dbname);
+  mysqli_query($conn, "SET NAMES UTF8");
 
-  // if($conn->connect_error) {
-  //   $bot->reply('haha');
-  //   die('Connection failed: ' . $conn->connect_error);
-  // }
+  if($conn->connect_error) {
+    $bot->reply('haha');
+    die('Connection failed: ' . $conn->connect_error);
+  }
 
-  // $inputUserName = $fbUserName;
-  // $inputUserId = $userId;
-  // $inputText = 'empty';
-  // $type = pathinfo($srcImage, PATHINFO_EXTENSION);
-  // $data = file_get_contents($srcImage);
-  // $inputImage = 'data:image/' . $type . ';base64,' . base64_encode($data);
+  $inputUserName = $fbUserName;
+  $inputUserId = $fbId;
+  $inputImage = 'https://nmdap.udn.com.tw/newmedia/mothers_day_bot/users_data/cards_dist/mothersCard_' . $distPath;
 
-  // $sql = "INSERT INTO card (user_name, user_id, image, text) VALUES ('" . $inputUserName . "', '" . $inputUserId . "', '" . $inputImage . "', '" . $inputText . "')";
-  // $conn->query($sql);
-  // $conn->close();
+  $sql = "INSERT INTO cards (user_name, user_id, image) VALUES ('" . $inputUserName . "', '" . $inputUserId . "', '" . $inputImage . "')";
+
+  $conn->query($sql);
+  $conn->close();
 
   // 回覆連結
-  $bot->userStorage()->delete();
   $bot->reply(GenericTemplate::create()
     ->addImageAspectRatio(GenericTemplate::RATIO_SQUARE)
     ->addElements([
       Element::create('印刷廠印製完成...')
         ->subtitle('前往卡片網頁')
-        ->image('https://nmdap.udn.com.tw/newmedia/mothers_day_bot/users_data/mothersCard_' . $distPath)
+        ->image('https://nmdap.udn.com.tw/newmedia/mothers_day_bot/users_data/cards_dist/mothersCard_' . $distPath)
         ->addButton(ElementButton::create('visit')
           ->url('https://nmdap.udn.com.tw/newmedia/mothers_day_bot/#' . $distPath)
         )
@@ -113,6 +118,12 @@ function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $f
 }
 
 function calcUsageCount($userId) {
+
+
+  // SELECT usage_count FROM `cards` WHERE user_id = 2749522658398703
+
+
+
   // $servername = 'localhost';
   // $username = 'newmedia';
   // $password = 'newmedia';
@@ -164,31 +175,60 @@ function certifyReply($userStorage, $bot) {
   }
 }
 
-// 預設標題flag
-// 預設文字flag
-// 預設圖片flag
-// $botman->hears('我要做卡片!', function(Botman $bot) {
+// -----啟動-----
+// $botman->hears('我要做卡片', function(Botman $bot) {
+//   $bot->userStorage()->delete();
 //   $user = $bot->getUser();
 //   $firstname = $user->getFirstName();
 //   $lastname = $user->getLastName();
 //   $id = $user->getId();
+//   $hashId = hash('ripemd160', $id);
 //   $bot->userStorage()->save([
-//     'titleFlag' => 0,
-//     'textFlag' => 0,
-//     'imageFlag' => 0,
+//     'userName' => $lastname . ' ' . $firstname,
+//     'userId' => $hashId,
+//     'fbId' => $id,
 //   ]);
+
+//   $bot->reply('開始做卡片');
+
+//   // $bot->reply(ListTemplate::create()
+//   //   ->useCompactView()
+//   //   ->addGlobalButton(ElementButton::create('自己輸入標題'))
+//   //   ->addElement(Element::create('媽咪!母親節快樂!永遠青春美麗!')
+//   //     ->image('')
+//   //     ->addButton(ElementButton::create('預設標題1')
+//   //       ->value('defaultText1')
+//   //     )
+//   //   )
+//   //   ->addElement(Element::create('媽咪!早安!媽咪!午安!媽咪!晚安!')
+//   //     ->image('')
+//   //     ->addButton(ElementButton::create('預設標題2')
+//   //       ->value('defaultText2')
+//   //     )
+//   //   )
+//   // );
 // });
+
+
 
 // -----Step 1-----
 // 是否使用預設標題
-// $botman->hears('defaultText1', function(Botman $bot, $text) {
+// $botman->hears('defaultText1', function(Botman $bot) {
+//   $bot->userStorage()->save([
+//     'title' => '媽咪!母親節快樂!/永遠青春美麗!'
+//   ]);
+
 //   $bot->reply(Question::create('標題確定?')->addButtons([
 //     Button::create('是')->value('titleYes'),
 //     Button::create('否')->value('titleNo'),
 //   ]));
 // });
 
-// $botman->hears('defaultText2', function(Botman $bot, $text) {
+// $botman->hears('defaultText2', function(Botman $bot) {
+//   $bot->userStorage()->save([
+//     'title' => '媽咪!早安!/媽咪!午安!/媽咪!晚安!'
+//   ]);
+
 //   $bot->reply(Question::create('標題確定?')->addButtons([
 //     Button::create('是')->value('titleYes'),
 //     Button::create('否')->value('titleNo'),
@@ -208,13 +248,11 @@ $botman->hears('標題 {text}', function(Botman $bot, $text) {
     'fbId' => $id,
     'title' => $text
   ]);
-
   $bot->reply(Question::create('標題確定?')->addButtons([
     Button::create('是')->value('titleYes'),
     Button::create('否')->value('titleNo'),
   ]));
 });
-
 $botman->hears('titleYes', function(BotMan $bot) {
   $bot->userStorage()->save([
     'titleFlag' => 1,
@@ -223,7 +261,6 @@ $botman->hears('titleYes', function(BotMan $bot) {
   certifyReply($bot->userStorage(), $bot);
   // $bot->reply('請輸入想對愛人說的話');
 });
-
 $botman->hears('titleNo', function(BotMan $bot) {
   $bot->userStorage()->save([
     'titleFlag' => 0,
@@ -247,7 +284,6 @@ $botman->hears('內文 {text}', function(BotMan $bot, $text) {
     Button::create('否')->value('textNo'),
   ]));
 });
-
 $botman->hears('textYes', function(BotMan $bot) {
   $bot->userStorage()->save([
     'textFlag' => 1
@@ -256,7 +292,6 @@ $botman->hears('textYes', function(BotMan $bot) {
   certifyReply($bot->userStorage(), $bot);
   // $bot->reply('請輸入和愛人的合照');
 });
-
 $botman->hears('textNo', function(BotMan $bot) {
   $bot->userStorage()->save([
     'textFlag' => 0,
@@ -283,7 +318,6 @@ $botman->receivesImages(function(BotMan $bot, $images) {
     ]));
   }
 });
-
 $botman->hears('imageYes', function(BotMan $bot) {
   $imageUrl = $bot->userStorage()->get('image');
   $userId = $bot->userStorage()->get('userId');
@@ -292,19 +326,16 @@ $botman->hears('imageYes', function(BotMan $bot) {
     'imageFlag' => 1,
     'imageFloat' => $float
   ]);
-
   saveImage($imageUrl, 'users_data/', 'userImage_' . $userId . '_' . $float . '.png');
   
   $bot->typesAndWaits(1);
   certifyReply($bot->userStorage(), $bot);
 });
-
 $botman->hears('imageNo', function(BotMan $bot) {
   $bot->userStorage()->save([
     'imageFlag' => 'false',
     'image' => ''
   ]);
-
   $bot->typesAndWaits(0.5);
   $bot->reply('請重新輸入和愛人的合照');
 });
@@ -323,13 +354,11 @@ $botman->hears('allYes', function (BotMan $bot) {
   
   // 判斷檔案名稱(根據使用者玩了幾次)
   // $usageCount = calcUsageCount($userId);
-
+  $bot->userStorage()->delete();
   imageSynthesis($titleContent, $textContent, 'users_data/userImage_' . $userId . '_' . $float . '.png', $fbUserName, $userId, $fbId, $float, $bot);
 });
-
 $botman->hears('allNo', function (BotMan $bot) {
   $bot->userStorage()->delete();
-
   $bot->typesAndWaits(0.5);
   $bot->reply('重新開始，請輸入標題');
 });
