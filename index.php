@@ -11,7 +11,6 @@ use BotMan\BotMan\Messages\Outgoing\Actions\Button;
 use BotMan\Drivers\Facebook\Extensions\Element;
 use BotMan\Drivers\Facebook\Extensions\ElementButton;
 use BotMan\Drivers\Facebook\Extensions\GenericTemplate;
-use BotMan\Drivers\Facebook\Extensions\ListTemplate;
 
 use Grafika\Grafika;
 use Grafika\Color;
@@ -22,7 +21,7 @@ require_once './src/autoloader.php';
 $config = [
   // Your driver-specific configuration
   'facebook' => [
-    'token' => 'EAAgFGCRdh0YBAEWoJPQmuxk3c8kHrwbQnAfAxL0feI3fIWd5PJT0ZCkNkgd81DCMIEQe31YPdUdektAY048u615vGGd3IKkiZChXRz4BYe2Wud0STqX8EbrEFLiLJSkTJOuK98JzRA73JncbokR3uSgmOh96dCJvuzZAzWV9wZDZD',
+    'token' => 'EAAgFGCRdh0YBAPE4cgPnoMBKloE0aNDKAzZBkG3BynMxk6llsHTYaZC4ZCosxw2ZAkkOSCXPBG8LSf5OkZA1x2rLSebqbLT6twZA2OmmJi4yRTcKeE81k1KQrPQ8oKDh1TsUaF1ZCqrLr9wOdtDNUBvhmSbnPhR1MHUUZByqUumHNwZDZD',
     'app_secret' => 'ee950085cfeacdd271ebaad5be3672aa',
     'verification'=>'happymothersdayudnforyou',
   ]
@@ -118,11 +117,7 @@ function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $f
 }
 
 function calcUsageCount($userId) {
-
-
   // SELECT usage_count FROM `cards` WHERE user_id = 2749522658398703
-
-
 
   // $servername = 'localhost';
   // $username = 'newmedia';
@@ -162,81 +157,32 @@ function certifyReply($userStorage, $bot) {
   $imageFlag = $userStorage->get('imageFlag');
 
   if ($titleFlag != 1) {
-    $bot->reply('請輸入標題');
+    // $bot->reply('請輸入標題');
+    $bot->reply(Question::create('請輸入標題')->addButtons([
+      Button::create('預設標題1: [預設標題1]')->value('defaultTitle1'),
+      Button::create('預設標題2: [預設標題2]')->value('defaultTitle2'),
+      Button::create('自行輸入標題')->value('userInputTitle')
+    ]));
   } else if ($textFlag != 1) {
-    $bot->reply('請輸入內文');
+    // $bot->reply('請輸入內文');
+    $bot->reply(Question::create('請輸入內文')->addButtons([
+      Button::create('預設內文1: [預設內文1]')->value('defaultText1'),
+      Button::create('預設內文2: [預設內文2]')->value('defaultText2'),
+      Button::create('自行輸入標題')->value('userInputText')
+    ]));
   } else if ($imageFlag != 1) {
     $bot->reply('請輸入圖片');
   } else {
     $bot->reply(Question::create('是→開始印卡片 | 否→重新開始')->addButtons([
       Button::create('是')->value('allYes'),
-      Button::create('否')->value('allNo'),
+      Button::create('否')->value('我要做卡片'),
     ]));
   }
 }
 
 // -----啟動-----
-// $botman->hears('我要做卡片', function(Botman $bot) {
-//   $bot->userStorage()->delete();
-//   $user = $bot->getUser();
-//   $firstname = $user->getFirstName();
-//   $lastname = $user->getLastName();
-//   $id = $user->getId();
-//   $hashId = hash('ripemd160', $id);
-//   $bot->userStorage()->save([
-//     'userName' => $lastname . ' ' . $firstname,
-//     'userId' => $hashId,
-//     'fbId' => $id,
-//   ]);
-
-//   $bot->reply('開始做卡片');
-
-//   // $bot->reply(ListTemplate::create()
-//   //   ->useCompactView()
-//   //   ->addGlobalButton(ElementButton::create('自己輸入標題'))
-//   //   ->addElement(Element::create('媽咪!母親節快樂!永遠青春美麗!')
-//   //     ->image('')
-//   //     ->addButton(ElementButton::create('預設標題1')
-//   //       ->value('defaultText1')
-//   //     )
-//   //   )
-//   //   ->addElement(Element::create('媽咪!早安!媽咪!午安!媽咪!晚安!')
-//   //     ->image('')
-//   //     ->addButton(ElementButton::create('預設標題2')
-//   //       ->value('defaultText2')
-//   //     )
-//   //   )
-//   // );
-// });
-
-
-
-// -----Step 1-----
-// 是否使用預設標題
-// $botman->hears('defaultText1', function(Botman $bot) {
-//   $bot->userStorage()->save([
-//     'title' => '媽咪!母親節快樂!/永遠青春美麗!'
-//   ]);
-
-//   $bot->reply(Question::create('標題確定?')->addButtons([
-//     Button::create('是')->value('titleYes'),
-//     Button::create('否')->value('titleNo'),
-//   ]));
-// });
-
-// $botman->hears('defaultText2', function(Botman $bot) {
-//   $bot->userStorage()->save([
-//     'title' => '媽咪!早安!/媽咪!午安!/媽咪!晚安!'
-//   ]);
-
-//   $bot->reply(Question::create('標題確定?')->addButtons([
-//     Button::create('是')->value('titleYes'),
-//     Button::create('否')->value('titleNo'),
-//   ]));
-// });
-
-// 接收使用者輸入的標題
-$botman->hears('標題 {text}', function(Botman $bot, $text) {
+$botman->hears('我要做卡片', function(BotMan $bot) {
+  $bot->userStorage()->delete();
   $user = $bot->getUser();
   $firstname = $user->getFirstName();
   $lastname = $user->getLastName();
@@ -246,11 +192,51 @@ $botman->hears('標題 {text}', function(Botman $bot, $text) {
     'userName' => $lastname . ' ' . $firstname,
     'userId' => $hashId,
     'fbId' => $id,
+  ]);
+
+  certifyReply($bot->userStorage(), $bot);
+});
+
+
+
+// -----Step 1-----
+// 使用預設標題1
+$botman->hears('defaultTitle1', function(BotMan $bot) {
+  $bot->userStorage()->save([
+    'title' => '媽咪!母親節快樂!/永遠青春美麗!'
+  ]);
+
+  $bot->reply(Question::create('標題確定?')->addButtons([
+    Button::create('是')->value('titleYes'),
+    Button::create('否')->value('我要做卡片'),
+  ]));
+});
+
+// 使用預設標題2
+$botman->hears('defaultTitle2', function(BotMan $bot) {
+  $bot->userStorage()->save([
+    'title' => '母親母親母親母節/快快快快樂'
+  ]);
+
+  $bot->reply(Question::create('標題確定?')->addButtons([
+    Button::create('是')->value('titleYes'),
+    Button::create('否')->value('我要做卡片'),
+  ]));
+});
+
+// 使用者輸入標題
+$botman->hears('userInputTitle', function(BotMan $bot) {
+  $bot->reply('請輸入標題，開頭必須是「標題 」');
+});
+
+// 接收使用者輸入的標題
+$botman->hears('標題 {text}', function(BotMan $bot, $text) {
+  $bot->userStorage()->save([
     'title' => $text
   ]);
   $bot->reply(Question::create('標題確定?')->addButtons([
     Button::create('是')->value('titleYes'),
-    Button::create('否')->value('titleNo'),
+    Button::create('否')->value('我要做卡片'),
   ]));
 });
 $botman->hears('titleYes', function(BotMan $bot) {
@@ -261,18 +247,39 @@ $botman->hears('titleYes', function(BotMan $bot) {
   certifyReply($bot->userStorage(), $bot);
   // $bot->reply('請輸入想對愛人說的話');
 });
-$botman->hears('titleNo', function(BotMan $bot) {
-  $bot->userStorage()->save([
-    'titleFlag' => 0,
-    'title' => ''
-  ]);
-  $bot->typesAndWaits(0.5);
-  $bot->reply('請重新輸入標題');
-});
 
 
 
 // -----Step 2-----
+// 使用預設內文1
+$botman->hears('defaultText1', function(BotMan $bot) {
+  $bot->userStorage()->save([
+    'text' => '少小離家老大回/鄉音無改鬢毛衰/兒童相見不相識/笑問客從何處來'
+  ]);
+
+  $bot->reply(Question::create('內文確定?')->addButtons([
+    Button::create('是')->value('textYes'),
+    Button::create('否')->value('我要做卡片'),
+  ]));
+});
+
+// 使用預設內文2
+$botman->hears('defaultText2', function(BotMan $bot) {
+  $bot->userStorage()->save([
+    'text' => '媽咪!早安!/媽咪!午安!/媽咪!晚安!'
+  ]);
+
+  $bot->reply(Question::create('內文確定?')->addButtons([
+    Button::create('是')->value('textYes'),
+    Button::create('否')->value('我要做卡片'),
+  ]));
+});
+
+// 使用者輸入內文
+$botman->hears('userInputText', function(BotMan $bot) {
+  $bot->reply('請輸入內文，開頭必須是「內文 」');
+});
+
 // 接收使用者輸入文字  
 $botman->hears('內文 {text}', function(BotMan $bot, $text) {
   $bot->userStorage()->save([
@@ -281,7 +288,7 @@ $botman->hears('內文 {text}', function(BotMan $bot, $text) {
   $bot->typesAndWaits(0.5);
   $bot->reply(Question::create('文字確定?')->addButtons([
     Button::create('是')->value('textYes'),
-    Button::create('否')->value('textNo'),
+    Button::create('否')->value('我要做卡片'),
   ]));
 });
 $botman->hears('textYes', function(BotMan $bot) {
@@ -292,15 +299,6 @@ $botman->hears('textYes', function(BotMan $bot) {
   certifyReply($bot->userStorage(), $bot);
   // $bot->reply('請輸入和愛人的合照');
 });
-$botman->hears('textNo', function(BotMan $bot) {
-  $bot->userStorage()->save([
-    'textFlag' => 0,
-    'text' => ''
-  ]);
-  $bot->typesAndWaits(0.5);
-  $bot->reply('請重新輸入想對愛人說的話');
-});
-
 
 
 // -----Step 3-----
@@ -314,7 +312,7 @@ $botman->receivesImages(function(BotMan $bot, $images) {
     $bot->typesAndWaits(1);
     $bot->reply(Question::create('圖片確定?')->addButtons([
       Button::create('是')->value('imageYes'),
-      Button::create('否')->value('imageNo'),
+      Button::create('否')->value('我要做卡片'),
     ]));
   }
 });
@@ -330,14 +328,6 @@ $botman->hears('imageYes', function(BotMan $bot) {
   
   $bot->typesAndWaits(1);
   certifyReply($bot->userStorage(), $bot);
-});
-$botman->hears('imageNo', function(BotMan $bot) {
-  $bot->userStorage()->save([
-    'imageFlag' => 'false',
-    'image' => ''
-  ]);
-  $bot->typesAndWaits(0.5);
-  $bot->reply('請重新輸入和愛人的合照');
 });
 
 
@@ -357,11 +347,8 @@ $botman->hears('allYes', function (BotMan $bot) {
   $bot->userStorage()->delete();
   imageSynthesis($titleContent, $textContent, 'users_data/userImage_' . $userId . '_' . $float . '.png', $fbUserName, $userId, $fbId, $float, $bot);
 });
-$botman->hears('allNo', function (BotMan $bot) {
-  $bot->userStorage()->delete();
-  $bot->typesAndWaits(0.5);
-  $bot->reply('重新開始，請輸入標題');
-});
+
+
 
 // Start listening
 $botman->listen();
