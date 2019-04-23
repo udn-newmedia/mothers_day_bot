@@ -21,7 +21,7 @@ require_once './src/autoloader.php';
 $config = [
   // Your driver-specific configuration
   'facebook' => [
-    'token' => 'EAAgFGCRdh0YBABX9wV2YQSgjGDXeVq5ghn4BcT3OOfkDqejgAiXOJZBtXASTMWmQTRrdKqFOV7ZC54brAWemZBh4RL1yit7BVUs6jmD4oQzAnDipGSrugZAOidC3yKlDPa7KJPdTGCjG9ZArfFxafHsvxs9PwyEXVd4omj4FgRwZDZD',
+    'token' => 'EAAgFGCRdh0YBAKtrInO2guT4zPyjWQaknjWzZAMChWyA5rcwEwDYnylZC3oa9DmJf3qL4upM5lf8A0IhbuGZBjAqFA3CaXBal349X3yTXoUaYCGUoA7OrRQZCiHN0mSuVAYOvHBX2Ua6l3p7Nfp8MqQ06qjx0jpgkqVkkaFnbwZDZD',
     'app_secret' => 'ee950085cfeacdd271ebaad5be3672aa',
     'verification'=>'happymothersdayudnforyou',
   ]
@@ -123,12 +123,6 @@ function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $f
     $conn->query($sql);
   }
 
-  // 從資料庫抓主鍵ID
-  // $queryId = "SELECT id FROM cards WHERE user_id=" . $inputUserId;
-  // $resultId = mysqli_query($conn, $queryId);
-  // $row = mysqli_fetch_array($resultId);
-  // $primaryKey = $row['id'];
-
   $conn->close();
 
   // 回覆連結
@@ -136,11 +130,15 @@ function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $f
     ->addImageAspectRatio(GenericTemplate::RATIO_SQUARE)
     ->addElements([
       Element::create('印刷廠印製完成...')
-        ->subtitle('前往卡片網頁')
+        ->subtitle('')
         ->image('https://nmdap.udn.com.tw/newmedia/mothers_day_bot/users_data/cards_dist/mothersCard_' . $distPath)
-        ->addButton(ElementButton::create('visit')
+        ->addButton(ElementButton::create('分享卡片')
           ->url('https://nmdap.udn.com.tw/newmedia/mothers_day_bot/#' . $inputUserId)
         )
+        ->addButton(ElementButton::create('重新製作卡片')
+          ->payload('我要做卡片')
+          ->type('postback')
+        ),
     ])
   );
 }
@@ -169,20 +167,23 @@ function certifyReply($userStorage, $bot) {
       Button::create('我要上傳')->value('userInputImage'),
       Button::create('我不上傳')->value('defaultImage1'),
     ]));
-    // $bot->reply('上為預設圖片1，下為預設圖片2');
-    // $image = Image::url('https://nmdap.udn.com.tw/newmedia/mothers_day_bot/card_materials/default_image/1.png');
-    // $message = OutgoingMessage::create('')->withAttachment($image);
-    // $bot->reply($message);
-    // $bot->reply(Question::create('請選擇圖片')->addButtons([
-    //   Button::create('輸入自己的圖片')->value('userInputImage'),
-    //   Button::create('預設圖片1')->value('defaultImage1'),
-    //   Button::create('預設圖片2')->value('defaultImage2')
-    // ]));
   } else {
-    $bot->reply(Question::create('是→開始印卡片 | 否→重新開始')->addButtons([
-      Button::create('是')->value('allYes'),
-      Button::create('否')->value('我要做卡片'),
-    ]));
+    $bot->reply('卡片製作中，請稍候...');
+    $titleContent = $bot->userStorage()->get('title');
+    $textContent = $bot->userStorage()->get('text');
+    $fbUserName = $bot->userStorage()->get('userName');
+    $userId = $bot->userStorage()->get('userId');
+    $fbId = $bot->userStorage()->get('fbId');
+    $float = $bot->userStorage()->get('imageFloat');
+    $defaultImageFlag = $bot->userStorage()->get('defalutImageFlag');
+    
+    $bot->userStorage()->delete();
+  
+    if ($defaultImageFlag != 1) {
+      imageSynthesis($titleContent, $textContent, 'users_data/userImage_' . $userId . '_' . $float . '.png', $fbUserName, $userId, $fbId, $float, $bot);
+    } else {
+      imageSynthesis($titleContent, $textContent, 'card_materials/default_image/1.png', $fbUserName, $userId, $fbId, $float, $bot);
+    }
   }
 }
 
@@ -210,25 +211,21 @@ $botman->hears('我要做卡片', function(BotMan $bot) {
 // 使用預設標題1
 $botman->hears('defaultTitle1', function(BotMan $bot) {
   $bot->userStorage()->save([
+    'titleFlag' => 1,
     'title' => '[預設標題1]/[預設標題1]'
   ]);
-
-  $bot->reply(Question::create('標題確定?')->addButtons([
-    Button::create('輸入完成')->value('titleYes'),
-    Button::create('我想重寫')->value('我要做卡片'),
-  ]));
+  $bot->typesAndWaits(0.5);
+  certifyReply($bot->userStorage(), $bot);
 });
 
 // 使用預設標題2
 $botman->hears('defaultTitle2', function(BotMan $bot) {
   $bot->userStorage()->save([
+    'titleFlag' => 1,
     'title' => '[預設標題2]/[預設標題2]'
   ]);
-
-  $bot->reply(Question::create('標題確定?')->addButtons([
-    Button::create('輸入完成')->value('titleYes'),
-    Button::create('我想重寫')->value('我要做卡片'),
-  ]));
+  $bot->typesAndWaits(0.5);
+  certifyReply($bot->userStorage(), $bot);
 });
 
 // 使用者輸入標題
@@ -239,21 +236,11 @@ $botman->hears('userInputTitle', function(BotMan $bot) {
 // 接收使用者輸入的標題
 $botman->hears('標題{text}', function(BotMan $bot, $text) {
   $bot->userStorage()->save([
-    'title' => $text
-  ]);
-  $bot->reply(Question::create('標題確定?')->addButtons([
-    Button::create('輸入完成')->value('titleYes'),
-    Button::create('我想重寫')->value('我要做卡片'),
-  ]));
-});
-
-$botman->hears('titleYes', function(BotMan $bot) {
-  $bot->userStorage()->save([
     'titleFlag' => 1,
+    'title' => $text
   ]);
   $bot->typesAndWaits(0.5);
   certifyReply($bot->userStorage(), $bot);
-  // $bot->reply('請輸入想對愛人說的話');
 });
 
 
@@ -262,25 +249,21 @@ $botman->hears('titleYes', function(BotMan $bot) {
 // 使用預設內文1
 $botman->hears('defaultText1', function(BotMan $bot) {
   $bot->userStorage()->save([
+    'textFlag' => 1,
     'text' => '[預設內文1]/[預設內文1]/[預設內文1]/[預設內文1]'
   ]);
-
-  $bot->reply(Question::create('內文確定?')->addButtons([
-    Button::create('輸入完成')->value('textYes'),
-    Button::create('我想重寫')->value('我要做卡片'),
-  ]));
+  $bot->typesAndWaits(0.5);
+  certifyReply($bot->userStorage(), $bot);
 });
 
 // 使用預設內文2
 $botman->hears('defaultText2', function(BotMan $bot) {
   $bot->userStorage()->save([
+    'textFlag' => 1,
     'text' => '[預設內文2]/[預設內文2]'
   ]);
-
-  $bot->reply(Question::create('內文確定?')->addButtons([
-    Button::create('輸入完成')->value('textYes'),
-    Button::create('我想重寫')->value('我要做卡片'),
-  ]));
+  $bot->typesAndWaits(0.5);
+  certifyReply($bot->userStorage(), $bot);
 });
 
 // 使用者輸入內文
@@ -291,21 +274,11 @@ $botman->hears('userInputText', function(BotMan $bot) {
 // 接收使用者輸入文字  
 $botman->hears('內文{text}', function(BotMan $bot, $text) {
   $bot->userStorage()->save([
-    'text' => $text,
+    'textFlag' => 1,
+    'text' => $text
   ]);
   $bot->typesAndWaits(0.5);
-  $bot->reply(Question::create('文字確定?')->addButtons([
-    Button::create('輸入完成')->value('textYes'),
-    Button::create('我想重寫')->value('我要做卡片'),
-  ]));
-});
-$botman->hears('textYes', function(BotMan $bot) {
-  $bot->userStorage()->save([
-    'textFlag' => 1
-  ]);
-  $bot->typesAndWaits(1);
   certifyReply($bot->userStorage(), $bot);
-  // $bot->reply('請輸入和愛人的合照');
 });
 
 
@@ -313,26 +286,14 @@ $botman->hears('textYes', function(BotMan $bot) {
 // -----Step 3-----
 // 使用預設圖片1
 $botman->hears('defaultImage1', function(BotMan $bot) {
+  $float = rand(0,10000);
   $bot->userStorage()->save([
-    'image' => 'https://nmdap.udn.com.tw/newmedia/mothers_day_bot/card_materials/default_image/1.png'
+    'defalutImageFlag' => '1',
+    'imageFlag' => 1,
+    'imageFloat' => $float
   ]);
   $bot->typesAndWaits(0.5);
-  $bot->reply(Question::create('圖片確定?')->addButtons([
-    Button::create('上傳確定')->value('imageYes'),
-    Button::create('我想重選')->value('我要做卡片'),
-  ]));
-});
-
-// 使用預設圖片2
-$botman->hears('defaultImage2', function(BotMan $bot) {
-  $bot->userStorage()->save([
-    'image' => 'https://nmdap.udn.com.tw/newmedia/mothers_day_bot/card_materials/default_image/2.png'
-  ]);
-  $bot->typesAndWaits(0.5);
-  $bot->reply(Question::create('圖片確定?')->addButtons([
-    Button::create('上傳確定')->value('imageYes'),
-    Button::create('我想重選')->value('我要做卡片'),
-  ]));
+  certifyReply($bot->userStorage(), $bot);
 });
 
 $botman->hears('userInputImage', function(BotMan $bot) {
@@ -342,48 +303,19 @@ $botman->hears('userInputImage', function(BotMan $bot) {
 // 接收使用者輸入圖片
 $botman->receivesImages(function(BotMan $bot, $images) {
   foreach ($images as $image) {
-    $url=$image->getUrl();
+    $bot->reply('圖片上傳中，請稍候...');
+    $imageUrl=$image->getUrl();
+    $userId = $bot->userStorage()->get('userId');
+    $float = rand(0,10000);
     $bot->userStorage()->save([
-      'image' => $url
+      'imageFlag' => 1,
+      'imageFloat' => $float
     ]);
-    $bot->typesAndWaits(0.5);
-    $bot->reply(Question::create('圖片確定?')->addButtons([
-      Button::create('上傳確定')->value('imageYes'),
-      Button::create('我想重選')->value('我要做卡片'),
-    ]));
+    saveImage($imageUrl, 'users_data/', 'userImage_' . $userId . '_' . $float . '.png');
+    
+    $bot->typesAndWaits(1);
+    certifyReply($bot->userStorage(), $bot);
   }
-});
-
-$botman->hears('imageYes', function(BotMan $bot) {
-  $bot->reply('圖片上傳中，請稍候...');
-  $imageUrl = $bot->userStorage()->get('image');
-  $userId = $bot->userStorage()->get('userId');
-  $float = rand(0,10000);
-  $bot->userStorage()->save([
-    'imageFlag' => 1,
-    'imageFloat' => $float
-  ]);
-  saveImage($imageUrl, 'users_data/', 'userImage_' . $userId . '_' . $float . '.png');
-  
-  $bot->typesAndWaits(1);
-  certifyReply($bot->userStorage(), $bot);
-});
-
-
-
-// -----Step 4-----
-// 全部完成與否
-$botman->hears('allYes', function (BotMan $bot) {
-  $bot->reply('卡片製作中，請稍候...');
-  $titleContent = $bot->userStorage()->get('title');
-  $textContent = $bot->userStorage()->get('text');
-  $fbUserName = $bot->userStorage()->get('userName');
-  $userId = $bot->userStorage()->get('userId');
-  $fbId = $bot->userStorage()->get('fbId');
-  $float = $bot->userStorage()->get('imageFloat');
-  
-  $bot->userStorage()->delete();
-  imageSynthesis($titleContent, $textContent, 'users_data/userImage_' . $userId . '_' . $float . '.png', $fbUserName, $userId, $fbId, $float, $bot);
 });
 
 
