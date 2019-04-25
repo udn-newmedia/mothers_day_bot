@@ -21,7 +21,7 @@ require_once './src/autoloader.php';
 $config = [
   // Your driver-specific configuration
   'facebook' => [
-    'token' => 'EAAgFGCRdh0YBAKtrInO2guT4zPyjWQaknjWzZAMChWyA5rcwEwDYnylZC3oa9DmJf3qL4upM5lf8A0IhbuGZBjAqFA3CaXBal349X3yTXoUaYCGUoA7OrRQZCiHN0mSuVAYOvHBX2Ua6l3p7Nfp8MqQ06qjx0jpgkqVkkaFnbwZDZD',
+    'token' => 'EAAgFGCRdh0YBADmUrZARu6IBNdO5lyF8mzFTH8JH55vkcCMiuVkGUJ4IzxolfnGlYFWJAkIEJkDt13IVjKvEIIcKk4lVgfjrUBljT2nRRQ9hELETc9A2BZBDW3aGpsyGhYspxWwAvRyvtZAAhUbTZCWV1UDLm7L8XPc7PE5CZAgZDZD',
     'app_secret' => 'ee950085cfeacdd271ebaad5be3672aa',
     'verification'=>'happymothersdayudnforyou',
   ]
@@ -41,13 +41,14 @@ function saveImage($srcUrl, $distUrl, $fileName) {
 
 function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $fbId, $float, $bot) {
   // Card parameter
-  $distPath = $userId . '_' . $float . '.png';
   $titleArray = explode("/", $srcTitle);
   $textArray = explode("/", $srcText);
   $titleArrayLength = sizeof($titleArray);
   $textArrayLength = sizeof($textArray);
   $titleSpace = 70;
-  $textSpace = 40;
+  $textSpace = 50;
+  $titleWidth = 11;
+  $textWidth = 13;
 
   // 卡片合成
   $editor = Grafika::createEditor();
@@ -57,23 +58,35 @@ function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $f
   $editor->open($image4, 'card_materials/cover_bg.png');
 
   // 圖片resize, resizeExact, resizeFill, resizeFit
-  $editor->resizeFill($image2, 460, 360);
+  $editor->resizeFill($image2, 410, 460);
   
   // 圖片旋轉
-  $editor->rotate($image2, 9, new Color('#ffffff'));
+  $editor->rotate($image2, 8, new Color('#ffffff'));
   
   // 圖片合成
-  $editor->blend($image1, $image2, 'normal', 1, 'top-left', 25, 212);
-  $editor->blend($image1, $image3 , 'normal', 1, 'top-left', 0, 212);
+  $editor->blend($image1, $image2, 'normal', 1, 'top-left', 0, 260);
+  $editor->blend($image1, $image3 , 'normal', 1, 'top-left', 0, 246);
   
   // 標題
+  $titleLineCount = 0;
   for ($i = 0; $i <= $titleArrayLength - 1; $i++) {
-    $editor->text($image1, $titleArray[$i], 44, 250, 90 + ($titleSpace * $i), null, 'fonts/ARMingB5Heavy.otf', 0);
+    $titleStringLength = mb_strlen($titleArray[$i], "utf-8");
+    for ($j = 0; $j <= ceil($titleStringLength / $titleWidth) - 1; $j++) {
+      $distText = mb_substr($titleArray[$i], $j * $titleWidth, $titleWidth, "utf-8");
+      $editor->text($image1, $distText, 40, 190, 90 + ($titleSpace * $titleLineCount), null, 'fonts/ARMingB5Heavy.otf', 0);
+      $titleLineCount++;
+    }
   } 
   
   // 內文
+  $textLineCount = 0;
   for ($i = 0; $i <= $textArrayLength - 1; $i++) {
-    $editor->text($image1, $textArray[$i], 24, 45, 600 + ($textSpace * $i), null, 'fonts/ARMingB5Medium.otf', 0);
+    $textStringLength = mb_strlen($textArray[$i], "utf-8");
+    for ($j = 0; $j <= ceil($textStringLength / $textWidth) - 1; $j++) {
+      $distText = mb_substr($textArray[$i], $j * $textWidth, $textWidth, "utf-8");
+      $editor->text($image1, $distText, 20, 405, 235 + ($textSpace * $textLineCount), null, 'fonts/ARMingB5Medium.otf', 0);
+      $textLineCount++;
+    }
   }
 
   $editor->save($image1, 'users_data/cards_dist/mothersCard_' . $distPath);
@@ -107,13 +120,10 @@ function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $f
   if (mysqli_num_rows($result) > 0) {
     while($row = $result->fetch_assoc()) {
       $updateCount = $row['usage_count'] + 1;
-
       $sql = "UPDATE cards SET usage_count=" . $updateCount . " WHERE user_id=" . $inputUserId;
       $conn->query($sql);
-
       $sql2 = "UPDATE cards SET image='" . $inputImage . "' WHERE user_id=" . $inputUserId;
       $conn->query($sql2);
-      
       $sql3 = "UPDATE cards SET cover_image='" . $inputCover . "' WHERE user_id=" . $inputUserId;
       $conn->query($sql3);
     }
@@ -129,7 +139,7 @@ function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $f
   $bot->reply(GenericTemplate::create()
     ->addImageAspectRatio(GenericTemplate::RATIO_SQUARE)
     ->addElements([
-      Element::create('印刷廠印製完成...')
+      Element::create('🖨印刷廠印製完成...')
         ->subtitle('')
         ->image('https://nmdap.udn.com.tw/newmedia/mothers_day_bot/users_data/cards_dist/mothersCard_' . $distPath)
         ->addButton(ElementButton::create('分享卡片')
@@ -149,26 +159,24 @@ function certifyReply($userStorage, $bot) {
   $imageFlag = $userStorage->get('imageFlag');
 
   if ($titleFlag != 1) {
-    // $bot->reply('請輸入標題');
-    $bot->reply(Question::create('請輸入標題')->addButtons([
+    $bot->reply(Question::create('⌨️請輸入標題')->addButtons([
       Button::create('自行輸入標題')->value('userInputTitle'),
       Button::create('預設標題1: [預設標題1]')->value('defaultTitle1'),
       Button::create('預設標題2: [預設標題2]')->value('defaultTitle2')
     ]));
   } else if ($textFlag != 1) {
-    // $bot->reply('請輸入內文');
-    $bot->reply(Question::create('請輸入內文')->addButtons([
+    $bot->reply(Question::create('⌨️請輸入內文')->addButtons([
       Button::create('自行輸入內文')->value('userInputText'),
       Button::create('預設內文1: [預設內文1]')->value('defaultText1'),
       Button::create('預設內文2: [預設內文2]')->value('defaultText2')
     ]));
   } else if ($imageFlag != 1) {
-    $bot->reply(Question::create('請選擇一張合照，如果不上傳合照，機器人使用預設圖片。')->addButtons([
+    $bot->reply(Question::create('🖼請選擇一張合照，如果不上傳合照，機器人使用預設圖片。')->addButtons([
       Button::create('我要上傳')->value('userInputImage'),
       Button::create('我不上傳')->value('defaultImage1'),
     ]));
   } else {
-    $bot->reply('卡片製作中，請稍候...');
+    $bot->reply('💌卡片製作中，請稍候...');
     $titleContent = $bot->userStorage()->get('title');
     $textContent = $bot->userStorage()->get('text');
     $fbUserName = $bot->userStorage()->get('userName');
@@ -178,7 +186,7 @@ function certifyReply($userStorage, $bot) {
     $defaultImageFlag = $bot->userStorage()->get('defalutImageFlag');
     
     $bot->userStorage()->delete();
-  
+    
     if ($defaultImageFlag != 1) {
       imageSynthesis($titleContent, $textContent, 'users_data/userImage_' . $userId . '_' . $float . '.png', $fbUserName, $userId, $fbId, $float, $bot);
     } else {
@@ -188,9 +196,38 @@ function certifyReply($userStorage, $bot) {
 }
 
 // -----啟動-----
+$botman->hears('{text}', function(BotMan $bot, $text) {
+  if ($text != '我要做卡片') {
+    $userInputTitleFlag = $bot->userStorage()->get('userInputTitleFlag');
+    $userInputTextFlag = $bot->userStorage()->get('userInputTextFlag');
+    if ($userInputTextFlag == 1) {
+      $bot->userStorage()->save([
+        'userInputTextFlag' => 0,
+        'textFlag' => 1,
+        'text' => $text
+      ]);
+      certifyReply($bot->userStorage(), $bot);
+    } else if ($userInputTitleFlag == 1) {
+      $bot->userStorage()->save([
+        'userInputTitleFlag' => 0,
+        'titleFlag' => 1,
+        'title' => $text
+      ]);
+      certifyReply($bot->userStorage(), $bot);
+    }
+  }
+});
+
 $botman->hears('我要做卡片', function(BotMan $bot) {
-  $bot->reply('本活動要依序上傳「標題」、「內文」、「合照」，就可完成小卡片的製作（如示意圖）');
-  $bot->userStorage()->delete();
+  $bot->reply('❤️本活動要依序上傳「標題」、「內文」、「合照」，就可完成小卡片的製作。（如下示意圖）');
+  // $bot->typesAndWaits(0.5);
+  // $attachment = new Image('https://nmdap.udn.com.tw/newmedia/mothers_day_bot/card_materials/example.png');
+  // // Build message object
+  // $message = OutgoingMessage::create('')->withAttachment($attachment);
+
+  // // Reply message object
+  // $bot->reply($message);
+
   $user = $bot->getUser();
   $firstname = $user->getFirstName();
   $lastname = $user->getLastName();
@@ -230,17 +267,12 @@ $botman->hears('defaultTitle2', function(BotMan $bot) {
 
 // 使用者輸入標題
 $botman->hears('userInputTitle', function(BotMan $bot) {
-  $bot->reply('請輸入標題，開頭請先輸入「標題」，再輸入你的標題，例如：標題媽媽母親節快樂("標題"2字不會出現在卡片裡面)');
-});
-
-// 接收使用者輸入的標題
-$botman->hears('標題{text}', function(BotMan $bot, $text) {
   $bot->userStorage()->save([
-    'titleFlag' => 1,
-    'title' => $text
+    'userInputTitleFlag' => 1,
   ]);
-  $bot->typesAndWaits(0.5);
-  certifyReply($bot->userStorage(), $bot);
+
+  $bot->reply('❤️請輸入標題，也就是卡片的標題😄
+  注意：請勿輸入超過22字（含標點符號），如須換行，請輸入"/"');
 });
 
 
@@ -268,17 +300,12 @@ $botman->hears('defaultText2', function(BotMan $bot) {
 
 // 使用者輸入內文
 $botman->hears('userInputText', function(BotMan $bot) {
-  $bot->reply('請輸入內文，也就是你想對媽媽說的話，開頭請先輸入「內文」，再輸入你想說的話，例如：內文親愛的媽媽/在這特別的日子裡...("內文"2字不會出現在卡片裡面)\n\n請勿輸入超過52字（含標點符號），如須換行，請輸入"/"');
-});
-
-// 接收使用者輸入文字  
-$botman->hears('內文{text}', function(BotMan $bot, $text) {
   $bot->userStorage()->save([
-    'textFlag' => 1,
-    'text' => $text
+    'userInputTextFlag' => 1,
   ]);
-  $bot->typesAndWaits(0.5);
-  certifyReply($bot->userStorage(), $bot);
+
+  $bot->reply('❤️請輸入內文，也就是你想對媽媽說的話😄
+  注意：請勿輸入超過52字（含標點符號），如須換行，請輸入"/"');
 });
 
 
@@ -297,13 +324,13 @@ $botman->hears('defaultImage1', function(BotMan $bot) {
 });
 
 $botman->hears('userInputImage', function(BotMan $bot) {
-  $bot->reply('請選擇一張合照（建議上傳直式照片）');
+  $bot->reply('❤️請選擇一張合照（建議上傳直式照片）');
 });
 
 // 接收使用者輸入圖片
 $botman->receivesImages(function(BotMan $bot, $images) {
   foreach ($images as $image) {
-    $bot->reply('圖片上傳中，請稍候...');
+    $bot->reply('🖼圖片上傳中，請稍候...');
     $imageUrl=$image->getUrl();
     $userId = $bot->userStorage()->get('userId');
     $float = rand(0,10000);
