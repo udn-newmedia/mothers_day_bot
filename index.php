@@ -50,6 +50,9 @@ function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $f
   $textSpace = 50;
   $titleWidth = 11;
   $textWidth = 13;
+  $titleCharWidth = 53;
+  $titleCharHalfWidth = 27;
+  $totalTitleWidth = $titleWidth * $titleCharWidth;
 
   // 卡片合成
   $editor = Grafika::createEditor();
@@ -63,29 +66,78 @@ function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $f
 
   // 圖片旋轉
   $editor->rotate($image2, 8, new Color('#ffffff'));
-  
+
   // 圖片合成
   $editor->blend($image1, $image2, 'normal', 1, 'top-left', 0, 246);
   $editor->blend($image1, $image3 , 'normal', 1, 'top-left', 0, 246);
-  
+
+
+
+  // 計算有幾個全形半形
+  function computeChar($srcString) {
+    $titleStringLength = mb_strlen($srcString, "utf-8");
+    $titleHalfStringLength = strlen($srcString);
+    $halfCharNum = ($titleStringLength * 3 - $titleHalfStringLength) * 0.5;
+    $fullCharNum = $titleStringLength - $halfCharNum;
+    
+    return ['half' => $halfCharNum, 'full' => $fullCharNum];
+  }
+
+  // 判斷是否需要斷行
+  function breakLine($srcString, $limit) {
+    $stringLength = mb_strlen($srcString, "utf-8");
+    $srcStringArray = [];
+    $distArray = [];
+    
+    for ($i = 0; $i < $stringLength; $i++) {
+      array_push($srcStringArray, mb_substr($srcString, $i, 1, "utf-8"));
+    }
+    
+    $tempString = '';
+    $lengthCount = 0;
+    for ($i = 0; $i < sizeof($srcStringArray); $i++) {
+      $tempString .= $srcStringArray[$i];
+
+      if (computeChar($srcStringArray[$i])['full'] == 1) {
+        $lengthCount++;
+      } else {
+        $lengthCount += 0.5;
+      }
+
+      if($lengthCount >= $limit || $i == sizeof($srcStringArray) - 1) {
+        array_push($distArray, $tempString);
+        $tempString = '';
+        $lengthCount = 0;
+      }
+    }
+
+    return $distArray;
+  }
+
+
+
   // 標題
   $titleLineCount = 0;
-  for ($i = 0; $i <= $titleArrayLength - 1; $i++) {
-    $titleStringLength = mb_strlen($titleArray[$i], "utf-8");
-    for ($j = 0; $j <= ceil($titleStringLength / $titleWidth) - 1; $j++) {
-      $distText = mb_substr($titleArray[$i], $j * $titleWidth, $titleWidth, "utf-8");
-      $editor->text($image1, $distText, 40, 190, 90 + ($titleSpace * $titleLineCount), null, 'fonts/ARMingB5Heavy.otf', 0);
+  for ($i = 0; $i <= $titleArrayLength - 1; $i++) {  
+    $titleStringArray = breakLine($titleArray[$i], $titleWidth);
+    $titleStringArrayLength = sizeof(breakLine($titleArray[$i], $titleWidth));
+    for ($j = 0; $j < $titleStringArrayLength; $j++) {
+      $halfCharNum = computeChar($titleStringArray[$j])['half'];
+      $fullCharNum = computeChar($titleStringArray[$j])['full'];
+      $translateX = $totalTitleWidth - ($halfCharNum * $titleCharHalfWidth + $fullCharNum * $titleCharWidth);
+
+      $editor->text($image1, $titleStringArray[$j], 40, 190 + $translateX, 90 + ($titleSpace * $titleLineCount), null, 'fonts/ARMingB5Heavy.otf', 0);
       $titleLineCount++;
     }
   } 
-  
+
   // 內文
   $textLineCount = 0;
   for ($i = 0; $i <= $textArrayLength - 1; $i++) {
-    $textStringLength = mb_strlen($textArray[$i], "utf-8");
-    for ($j = 0; $j <= ceil($textStringLength / $textWidth) - 1; $j++) {
-      $distText = mb_substr($textArray[$i], $j * $textWidth, $textWidth, "utf-8");
-      $editor->text($image1, $distText, 20, 405, 235 + ($textSpace * $textLineCount), null, 'fonts/ARMingB5Medium.otf', 0);
+    $textStringArray = breakLine($textArray[$i], $textWidth);
+    $textStringArrayLength = sizeof(breakLine($textArray[$i], $textWidth));
+    for ($j = 0; $j < $textStringArrayLength; $j++) {
+      $editor->text($image1, $textStringArray[$j], 20, 405, 270 + ($textSpace * $textLineCount), null, 'fonts/ARMingB5Medium.otf', 0);
       $textLineCount++;
     }
   }
@@ -146,7 +198,7 @@ function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $f
         ->subtitle('')
         ->image('https://nmdap.udn.com.tw/newmedia/mothers_day_bot/users_data/cards_dist/mothersCard_' . $distPath)
         ->addButton(ElementButton::create('分享卡片')
-          ->url('https://nmdap.udn.com.tw/newmedia/mothers_day_bot/#' . $inputUserId)
+          ->url('http://nmdap.udn.com.tw/upf/newmedia/2019_data/lovecard/#' . $inputUserId)
         )
         ->addButton(ElementButton::create('重新製作卡片')
           ->payload('我要做卡片')
@@ -164,14 +216,14 @@ function certifyReply($userStorage, $bot) {
   if ($titleFlag != 1) {
     $bot->reply(Question::create('⌨️請輸入標題')->addButtons([
       Button::create('自行輸入標題')->value('userInputTitle'),
-      Button::create('預設標題1: [預設標題1]')->value('defaultTitle1'),
-      Button::create('預設標題2: [預設標題2]')->value('defaultTitle2')
+      Button::create('謝謝您無私的愛和包容！/母親節快樂！')->value('defaultTitle1')
+      // Button::create('預設標題2: [預設標題2]')->value('defaultTitle2')
     ]));
   } else if ($textFlag != 1) {
     $bot->reply(Question::create('⌨️請輸入內文')->addButtons([
       Button::create('自行輸入內文')->value('userInputText'),
-      Button::create('預設內文1: [預設內文1]')->value('defaultText1'),
-      Button::create('預設內文2: [預設內文2]')->value('defaultText2')
+      Button::create('感謝您無私的付出/在這特別的日子/送給您這張特製的小卡片/祝您母親節快樂')->value('defaultText1')
+      // Button::create('預設內文2: [預設內文2]')->value('defaultText2')
     ]));
   } else if ($imageFlag != 1) {
     $bot->reply(Question::create('🖼請選擇一張合照，如果不上傳合照，機器人將使用預設圖片。')->addButtons([
@@ -232,7 +284,7 @@ $botman->hears('我要做卡片', function(BotMan $bot) {
         2.「內文」
         3.「合照」
         就可完成小卡片的製作。')
-        ->image('https://nmdap.udn.com.tw/newmedia/mothers_day_bot/card_materials/example.png')
+        ->image('https://nmdap.udn.com.tw/newmedia/mothers_day_bot/card_materials/example2.png')
     ])
   );
 
@@ -269,21 +321,21 @@ $botman->hears('我要做卡片', function(BotMan $bot) {
 $botman->hears('defaultTitle1', function(BotMan $bot) {
   $bot->userStorage()->save([
     'titleFlag' => 1,
-    'title' => '[預設標題1]/[預設標題1]'
+    'title' => '謝謝您無私的愛和包容！/母親節快樂！'
   ]);
   $bot->typesAndWaits(0.5);
   certifyReply($bot->userStorage(), $bot);
 });
 
 // 使用預設標題2
-$botman->hears('defaultTitle2', function(BotMan $bot) {
-  $bot->userStorage()->save([
-    'titleFlag' => 1,
-    'title' => '[預設標題2]/[預設標題2]'
-  ]);
-  $bot->typesAndWaits(0.5);
-  certifyReply($bot->userStorage(), $bot);
-});
+// $botman->hears('defaultTitle2', function(BotMan $bot) {
+//   $bot->userStorage()->save([
+//     'titleFlag' => 1,
+//     'title' => '[預設標題2]/[預設標題2]'
+//   ]);
+//   $bot->typesAndWaits(0.5);
+//   certifyReply($bot->userStorage(), $bot);
+// });
 
 // 使用者輸入標題
 $botman->hears('userInputTitle', function(BotMan $bot) {
@@ -302,21 +354,21 @@ $botman->hears('userInputTitle', function(BotMan $bot) {
 $botman->hears('defaultText1', function(BotMan $bot) {
   $bot->userStorage()->save([
     'textFlag' => 1,
-    'text' => '[預設內文1]/[預設內文1]/[預設內文1]/[預設內文1]'
+    'text' => '感謝您無私的付出/在這特別的日子/送給您這張特製的小卡片/祝您母親節快樂'
   ]);
   $bot->typesAndWaits(0.5);
   certifyReply($bot->userStorage(), $bot);
 });
 
 // 使用預設內文2
-$botman->hears('defaultText2', function(BotMan $bot) {
-  $bot->userStorage()->save([
-    'textFlag' => 1,
-    'text' => '[預設內文2]/[預設內文2]'
-  ]);
-  $bot->typesAndWaits(0.5);
-  certifyReply($bot->userStorage(), $bot);
-});
+// $botman->hears('defaultText2', function(BotMan $bot) {
+//   $bot->userStorage()->save([
+//     'textFlag' => 1,
+//     'text' => '[預設內文2]/[預設內文2]'
+//   ]);
+//   $bot->typesAndWaits(0.5);
+//   certifyReply($bot->userStorage(), $bot);
+// });
 
 // 使用者輸入內文
 $botman->hears('userInputText', function(BotMan $bot) {
