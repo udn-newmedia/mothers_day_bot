@@ -21,7 +21,7 @@ require_once './src/autoloader.php';
 $config = [
   // Your driver-specific configuration
   'facebook' => [
-    'token' => 'EAAgFGCRdh0YBADmUrZARu6IBNdO5lyF8mzFTH8JH55vkcCMiuVkGUJ4IzxolfnGlYFWJAkIEJkDt13IVjKvEIIcKk4lVgfjrUBljT2nRRQ9hELETc9A2BZBDW3aGpsyGhYspxWwAvRyvtZAAhUbTZCWV1UDLm7L8XPc7PE5CZAgZDZD',
+    'token' => 'EAAgFGCRdh0YBAMQ1UbN5leTwlyoG1iQFYgsjF6mhtCuvZCK4giftirDRdqBojkk6MZBJSbBOxScNhLpb9pCIdfQjVWXV1j4IZAvjGr5LZB3uNJuOS8WNBKOhfZCdnXtGsULRuhBgRvoc9Ma9oJS9MnWCZB3rnKk5Swzp4fm7iGnwZDZD',
     'app_secret' => 'ee950085cfeacdd271ebaad5be3672aa',
     'verification'=>'happymothersdayudnforyou',
   ]
@@ -41,6 +41,7 @@ function saveImage($srcUrl, $distUrl, $fileName) {
 
 function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $fbId, $float, $bot) {
   // Card parameter
+  $distPath = $userId . '_' . $float . '.png';
   $titleArray = explode("/", $srcTitle);
   $textArray = explode("/", $srcText);
   $titleArrayLength = sizeof($titleArray);
@@ -58,13 +59,13 @@ function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $f
   $editor->open($image4, 'card_materials/cover_bg.png');
 
   // 圖片resize, resizeExact, resizeFill, resizeFit
-  $editor->resizeFill($image2, 410, 460);
-  
+  $editor->resizeFill($image2, 435, 480);
+
   // 圖片旋轉
   $editor->rotate($image2, 8, new Color('#ffffff'));
   
   // 圖片合成
-  $editor->blend($image1, $image2, 'normal', 1, 'top-left', 0, 260);
+  $editor->blend($image1, $image2, 'normal', 1, 'top-left', 0, 246);
   $editor->blend($image1, $image3 , 'normal', 1, 'top-left', 0, 246);
   
   // 標題
@@ -126,9 +127,11 @@ function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $f
       $conn->query($sql2);
       $sql3 = "UPDATE cards SET cover_image='" . $inputCover . "' WHERE user_id=" . $inputUserId;
       $conn->query($sql3);
+      $sql4 = "UPDATE cards SET updated_at=NOW() WHERE user_id=" . $inputUserId;
+      $conn->query($sql4);
     }
   } else {
-    $sql = "INSERT INTO cards (user_name, user_id, image, cover_image) VALUES ('" . $inputUserName . "', '" . $inputUserId . "', '" . $inputImage . "','" . $inputCover . "')";
+    $sql =  "INSERT INTO cards (user_name, user_id, image, cover_image) VALUES ('" . $inputUserName . "', '" . $inputUserId . "', '" . $inputImage . "','" . $inputCover . "')";
 
     $conn->query($sql);
   }
@@ -171,22 +174,20 @@ function certifyReply($userStorage, $bot) {
       Button::create('預設內文2: [預設內文2]')->value('defaultText2')
     ]));
   } else if ($imageFlag != 1) {
-    $bot->reply(Question::create('🖼請選擇一張合照，如果不上傳合照，機器人使用預設圖片。')->addButtons([
+    $bot->reply(Question::create('🖼請選擇一張合照，如果不上傳合照，機器人將使用預設圖片。')->addButtons([
       Button::create('我要上傳')->value('userInputImage'),
       Button::create('我不上傳')->value('defaultImage1'),
     ]));
   } else {
     $bot->reply('💌卡片製作中，請稍候...');
-    $titleContent = $bot->userStorage()->get('title');
-    $textContent = $bot->userStorage()->get('text');
-    $fbUserName = $bot->userStorage()->get('userName');
-    $userId = $bot->userStorage()->get('userId');
-    $fbId = $bot->userStorage()->get('fbId');
-    $float = $bot->userStorage()->get('imageFloat');
-    $defaultImageFlag = $bot->userStorage()->get('defalutImageFlag');
-    
-    $bot->userStorage()->delete();
-    
+    $titleContent = $userStorage->get('title');
+    $textContent = $userStorage->get('text');
+    $fbUserName = $userStorage->get('userName');
+    $userId = $userStorage->get('userId');
+    $fbId = $userStorage->get('fbId');
+    $float = $userStorage->get('imageFloat');
+    $defaultImageFlag = $userStorage->get('defaultImageFlag');
+        
     if ($defaultImageFlag != 1) {
       imageSynthesis($titleContent, $textContent, 'users_data/userImage_' . $userId . '_' . $float . '.png', $fbUserName, $userId, $fbId, $float, $bot);
     } else {
@@ -219,13 +220,31 @@ $botman->hears('{text}', function(BotMan $bot, $text) {
 });
 
 $botman->hears('我要做卡片', function(BotMan $bot) {
-  $bot->reply('❤️本活動要依序上傳「標題」、「內文」、「合照」，就可完成小卡片的製作。（如下示意圖）');
+  $bot->userStorage()->delete();
+
+  // 回覆連結
+  $bot->reply(GenericTemplate::create()
+    ->addImageAspectRatio(GenericTemplate::RATIO_SQUARE)
+    ->addElements([
+      Element::create('💌聯合報母親節卡片製作')
+        ->subtitle('本活動要依序上傳
+        1.「標題」
+        2.「內文」
+        3.「合照」
+        就可完成小卡片的製作。')
+        ->image('https://nmdap.udn.com.tw/newmedia/mothers_day_bot/card_materials/example.png')
+    ])
+  );
+
+  // $bot->reply('❤️本活動要依序上傳
+  // 1.「標題」
+  // 2.「內文」
+  // 3.「合照」
+  // 就可完成小卡片的製作。
+  // （如下示意圖）');
   // $bot->typesAndWaits(0.5);
   // $attachment = new Image('https://nmdap.udn.com.tw/newmedia/mothers_day_bot/card_materials/example.png');
-  // // Build message object
   // $message = OutgoingMessage::create('')->withAttachment($attachment);
-
-  // // Reply message object
   // $bot->reply($message);
 
   $user = $bot->getUser();
@@ -233,6 +252,7 @@ $botman->hears('我要做卡片', function(BotMan $bot) {
   $lastname = $user->getLastName();
   $id = $user->getId();
   $hashId = hash('ripemd160', $id);
+
   $bot->userStorage()->save([
     'userName' => $lastname . ' ' . $firstname,
     'userId' => $hashId,
@@ -315,7 +335,7 @@ $botman->hears('userInputText', function(BotMan $bot) {
 $botman->hears('defaultImage1', function(BotMan $bot) {
   $float = rand(0,10000);
   $bot->userStorage()->save([
-    'defalutImageFlag' => '1',
+    'defaultImageFlag' => '1',
     'imageFlag' => 1,
     'imageFloat' => $float
   ]);
@@ -329,19 +349,21 @@ $botman->hears('userInputImage', function(BotMan $bot) {
 
 // 接收使用者輸入圖片
 $botman->receivesImages(function(BotMan $bot, $images) {
-  foreach ($images as $image) {
-    $bot->reply('🖼圖片上傳中，請稍候...');
-    $imageUrl=$image->getUrl();
-    $userId = $bot->userStorage()->get('userId');
-    $float = rand(0,10000);
-    $bot->userStorage()->save([
-      'imageFlag' => 1,
-      'imageFloat' => $float
-    ]);
-    saveImage($imageUrl, 'users_data/', 'userImage_' . $userId . '_' . $float . '.png');
-    
-    $bot->typesAndWaits(1);
-    certifyReply($bot->userStorage(), $bot);
+  if ($bot->userStorage()->get('imageFlag') != 1) {
+    foreach ($images as $image) {
+      $bot->reply('🖼圖片上傳中，請稍候...');
+      $imageUrl=$image->getUrl();
+      $userId = $bot->userStorage()->get('userId');
+      $float = rand(0,10000);
+      $bot->userStorage()->save([
+        'imageFlag' => 1,
+        'imageFloat' => $float
+      ]);
+      saveImage($imageUrl, 'users_data/', 'userImage_' . $userId . '_' . $float . '.png');
+      
+      $bot->typesAndWaits(1);
+      certifyReply($bot->userStorage(), $bot);
+    }
   }
 });
 
