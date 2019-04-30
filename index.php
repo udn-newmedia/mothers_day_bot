@@ -21,7 +21,7 @@ require_once './src/autoloader.php';
 $config = [
   // Your driver-specific configuration
   'facebook' => [
-    'token' => 'EAAgFGCRdh0YBAMQ1UbN5leTwlyoG1iQFYgsjF6mhtCuvZCK4giftirDRdqBojkk6MZBJSbBOxScNhLpb9pCIdfQjVWXV1j4IZAvjGr5LZB3uNJuOS8WNBKOhfZCdnXtGsULRuhBgRvoc9Ma9oJS9MnWCZB3rnKk5Swzp4fm7iGnwZDZD',
+    'token' => 'EAAgFGCRdh0YBAKyheN1Leg3r4gFJDbWok2KZBHZAJyJV1Fh6VveJh8ZBS2oZBLjQGZCHePmSOvUP5t0MorYt73BTVZCJWz55RhwvXF2Yw01wHTz4BQZAekZCPE6ZC4aqZCR8umii6ofwvdr0dcWHpp87KFgTjVK7CGFjd4m6ZAUq7RlvAZDZD',
     'app_secret' => 'ee950085cfeacdd271ebaad5be3672aa',
     'verification'=>'happymothersdayudnforyou',
   ]
@@ -68,10 +68,8 @@ function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $f
   $editor->rotate($image2, 8, new Color('#ffffff'));
 
   // 圖片合成
-  $editor->blend($image1, $image2, 'normal', 1, 'top-left', 0, 246);
-  $editor->blend($image1, $image3 , 'normal', 1, 'top-left', 0, 246);
-
-
+  $editor->blend($image1, $image2, 'normal', 1, 'top-left', 0, 225);
+  $editor->blend($image1, $image3 , 'normal', 1, 'top-left', 0, 225);
 
   // 計算有幾個全形半形
   function computeChar($srcString) {
@@ -113,8 +111,6 @@ function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $f
 
     return $distArray;
   }
-
-
 
   // 標題
   $titleLineCount = 0;
@@ -190,22 +186,103 @@ function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $f
 
   $conn->close();
 
-  // 回覆連結
-  $bot->reply(GenericTemplate::create()
-    ->addImageAspectRatio(GenericTemplate::RATIO_SQUARE)
-    ->addElements([
-      Element::create('🖨印刷廠印製完成...')
-        ->subtitle('')
-        ->image('https://nmdap.udn.com.tw/newmedia/mothers_day_bot/users_data/cards_dist/mothersCard_' . $distPath)
-        ->addButton(ElementButton::create('分享卡片')
-          ->url('http://nmdap.udn.com.tw/upf/newmedia/2019_data/lovecard/#' . $inputUserId)
-        )
-        ->addButton(ElementButton::create('重新製作卡片')
-          ->payload('我要做卡片')
-          ->type('postback')
-        ),
-    ])
-  );
+  // 回覆連結 
+  $url = 'https://graph.facebook.com/v2.6/me/messages?access_token=EAAgFGCRdh0YBAKyheN1Leg3r4gFJDbWok2KZBHZAJyJV1Fh6VveJh8ZBS2oZBLjQGZCHePmSOvUP5t0MorYt73BTVZCJWz55RhwvXF2Yw01wHTz4BQZAekZCPE6ZC4aqZCR8umii6ofwvdr0dcWHpp87KFgTjVK7CGFjd4m6ZAUq7RlvAZDZD';
+
+  $ch = curl_init($url);
+  $jsonData = 
+  '{
+    "recipient":{
+      "id":"' . $inputUserId . '"
+    },
+    "message":{
+      "attachment": {
+        "type": "template",
+        "payload": {
+          "template_type": "generic",
+          "image_aspect_ratio":"square",
+          "elements":
+          [
+            {
+              "title": "2019聯合報粉絲頁母親節卡片",
+              "image_url": "https://nmdap.udn.com.tw/newmedia/mothers_day_bot/users_data/cards_dist/mothersCard_' . $distPath . '",
+              "subtitle": "",
+              "default_action": {
+                "type": "web_url",
+                "url": "http://nmdap.udn.com.tw/upf/newmedia/2019_data/lovecard/#' . $inputUserId . '",
+                "messenger_extensions": false,
+                "webview_height_ratio": "tall",
+              },
+              "buttons": [
+                {
+                  "type": "web_url",
+                  "url": "http://nmdap.udn.com.tw/upf/newmedia/2019_data/lovecard/#' . $inputUserId . '",
+                  "title": "觀看母親節卡片"
+                },
+                {
+                  "type": "postback",
+                  "title": "重新製作卡片",
+                  "payload": "我要做卡片"
+                },
+                {
+                  "type": "element_share",
+                  "share_contents": { 
+                    "attachment": {
+                      "type": "template",
+                      "payload": {
+                        "template_type": "generic",
+                        "image_aspect_ratio":"square",
+                        "elements": [
+                          {
+                            "title": "2019聯合報粉絲頁母親節卡片",
+                            "subtitle": "今年的母親節，你打算送媽媽、阿嬤或最照顧你的人什麼東西呢？不如傳給她一張有你們合照的小卡片吧！聯合報粉絲專頁的這個小活動，只要依步驟上傳一張你們的合照、寫上你想對她說的話，我們就可以幫你做好一張小卡，讓妳送給她喔！",
+                            "image_url": "https://nmdap.udn.com.tw/newmedia/mothers_day_bot/users_data/cards_dist/mothersCard_' . $distPath . '",
+                            "default_action": {
+                              "type": "web_url",
+                              "url": "http://nmdap.udn.com.tw/upf/newmedia/2019_data/lovecard/#' . $inputUserId . '"
+                            },
+                            "buttons": [
+                              {
+                                "type": "web_url",
+                                "url": "http://m.me/321100408573986", 
+                                "title": "我要做卡片"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }';
+
+  /* curl setting to send a json post data */
+  curl_setopt($ch, CURLOPT_POST, 1);
+  curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonData);
+  curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+  $result = curl_exec($ch); // user will get the message
+
+  // $bot->reply(GenericTemplate::create()
+  //   ->addImageAspectRatio(GenericTemplate::RATIO_SQUARE)
+  //   ->addElements([
+  //     Element::create('印刷廠印製完成...')
+  //       ->subtitle('')
+  //       ->image('https://nmdap.udn.com.tw/newmedia/mothers_day_bot/users_data/cards_dist/mothersCard_' . $distPath)
+  //       ->addButton(ElementButton::create('分享卡片')
+  //         ->url('http://nmdap.udn.com.tw/upf/newmedia/2019_data/lovecard/#' . $inputUserId)
+  //       )
+  //       ->addButton(ElementButton::create('重新製作卡片')
+  //         ->payload('我要做卡片')
+  //         ->type('postback')
+  //       ),
+  //   ])
+  // );
 }
 
 function certifyReply($userStorage, $bot) {
@@ -214,12 +291,18 @@ function certifyReply($userStorage, $bot) {
   $imageFlag = $userStorage->get('imageFlag');
 
   if ($titleFlag != 1) {
+    $bot->userStorage()->save([
+      'enterTitleFlag' => 1,
+    ]);
     $bot->reply(Question::create('⌨️請輸入標題')->addButtons([
       Button::create('自行輸入標題')->value('userInputTitle'),
       Button::create('謝謝您無私的愛和包容！/母親節快樂！')->value('defaultTitle1')
       // Button::create('預設標題2: [預設標題2]')->value('defaultTitle2')
     ]));
   } else if ($textFlag != 1) {
+    $bot->userStorage()->save([
+      'enterTextFlag' => 1,
+    ]);
     $bot->reply(Question::create('⌨️請輸入內文')->addButtons([
       Button::create('自行輸入內文')->value('userInputText'),
       Button::create('感謝您無私的付出/在這特別的日子/送給您這張特製的小卡片/祝您母親節快樂')->value('defaultText1')
@@ -251,22 +334,41 @@ function certifyReply($userStorage, $bot) {
 // -----啟動-----
 $botman->hears('{text}', function(BotMan $bot, $text) {
   if ($text != '我要做卡片') {
+    $enterTitleFlag = $bot->userStorage()->get('enterTitleFlag');
+    $enterTextFlag = $bot->userStorage()->get('enterTextFlag');
     $userInputTitleFlag = $bot->userStorage()->get('userInputTitleFlag');
     $userInputTextFlag = $bot->userStorage()->get('userInputTextFlag');
-    if ($userInputTextFlag == 1) {
-      $bot->userStorage()->save([
-        'userInputTextFlag' => 0,
-        'textFlag' => 1,
-        'text' => $text
-      ]);
-      certifyReply($bot->userStorage(), $bot);
-    } else if ($userInputTitleFlag == 1) {
-      $bot->userStorage()->save([
-        'userInputTitleFlag' => 0,
-        'titleFlag' => 1,
-        'title' => $text
-      ]);
-      certifyReply($bot->userStorage(), $bot);
+
+    if ($enterTextFlag == 1) {
+      // 如果進入text conversation
+      if ($userInputTextFlag == 1) {
+        // 如果有按自行輸入按鈕
+        $bot->userStorage()->save([
+          'enterTextFlag' => 0,
+          'userInputTextFlag' => 0,
+          'textFlag' => 1,
+          'text' => $text
+        ]);
+        certifyReply($bot->userStorage(), $bot);
+      } else if ($text != 'defaultText1' && $text != 'userInputText') {
+        // 按鈕以外的任何對話，重新問一次「請輸入標題」
+        certifyReply($bot->userStorage(), $bot);
+      }
+    } else if ($enterTitleFlag == 1) {
+      // 如果進入title conversation
+      if ($userInputTitleFlag == 1) {
+        // 如果有按自行輸入按鈕
+        $bot->userStorage()->save([
+          'enterTitleFlag' => 0,
+          'userInputTitleFlag' => 0,
+          'titleFlag' => 1,
+          'title' => $text
+        ]);
+        certifyReply($bot->userStorage(), $bot);
+      } else if ($text != 'defaultTitle1' && $text != 'userInputTitle') {
+        // 按鈕以外的任何對話
+        certifyReply($bot->userStorage(), $bot);
+      }
     }
   }
 });
@@ -320,6 +422,7 @@ $botman->hears('我要做卡片', function(BotMan $bot) {
 // 使用預設標題1
 $botman->hears('defaultTitle1', function(BotMan $bot) {
   $bot->userStorage()->save([
+    'enterTitleFlag' => 0,
     'titleFlag' => 1,
     'title' => '謝謝您無私的愛和包容！/母親節快樂！'
   ]);
@@ -353,6 +456,7 @@ $botman->hears('userInputTitle', function(BotMan $bot) {
 // 使用預設內文1
 $botman->hears('defaultText1', function(BotMan $bot) {
   $bot->userStorage()->save([
+    'enterTextFlag' => 0,
     'textFlag' => 1,
     'text' => '感謝您無私的付出/在這特別的日子/送給您這張特製的小卡片/祝您母親節快樂'
   ]);
