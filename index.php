@@ -158,6 +158,15 @@ function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $f
     die('Connection failed: ' . $conn->connect_error);
   }
 
+
+  // 抓用戶性別等資料
+  $userDataUrl = 'https://graph.facebook.com/1986320604798103?fields=first_name,last_name,profile_pic,gender,locale,timezone&access_token=EAAgFGCRdh0YBAKyheN1Leg3r4gFJDbWok2KZBHZAJyJV1Fh6VveJh8ZBS2oZBLjQGZCHePmSOvUP5t0MorYt73BTVZCJWz55RhwvXF2Yw01wHTz4BQZAekZCPE6ZC4aqZCR8umii6ofwvdr0dcWHpp87KFgTjVK7CGFjd4m6ZAUq7RlvAZDZD';
+  $userDataContent = file_get_contents($userDataUrl);
+  $userDataJson = json_decode($userDataContent, true);
+  $userGender = $userDataJson['gender'];
+  $userLocale = $userDataJson['locale'];
+  $userTimezone = $userDataJson['timezone'];
+
   $inputUserName = $fbUserName;
   $inputUserId = $fbId;
   $inputImage = 'https://nmdap.udn.com.tw/newmedia/mothers_day_bot/users_data/cards_dist/mothersCard_' . $distPath;
@@ -186,6 +195,9 @@ function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $f
 
   $conn->close();
 
+
+
+
   // 回覆連結 
   $url = 'https://graph.facebook.com/v2.6/me/messages?access_token=EAAgFGCRdh0YBAKyheN1Leg3r4gFJDbWok2KZBHZAJyJV1Fh6VveJh8ZBS2oZBLjQGZCHePmSOvUP5t0MorYt73BTVZCJWz55RhwvXF2Yw01wHTz4BQZAekZCPE6ZC4aqZCR8umii6ofwvdr0dcWHpp87KFgTjVK7CGFjd4m6ZAUq7RlvAZDZD';
 
@@ -205,11 +217,11 @@ function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $f
           [
             {
               "title": "2019聯合報粉絲頁母親節卡片",
-              "image_url": "https://nmdap.udn.com.tw/newmedia/mothers_day_bot/users_data/cards_dist/mothersCard_' . $distPath . '",
+              "image_url": "https://nmdap.udn.com.tw/newmedia/mothers_day_bot/users_data/cards_dist/mothersCard_' . $distPath .'",
               "subtitle": "",
               "default_action": {
                 "type": "web_url",
-                "url": "http://nmdap.udn.com.tw/upf/newmedia/2019_data/lovecard/#' . $inputUserId . '",
+                "url": "https://nmdap.udn.com.tw/newmedia/mothers_day_bot/users_data/cards_dist/mothersCard_' . $distPath .'",
                 "messenger_extensions": false,
                 "webview_height_ratio": "tall",
               },
@@ -221,7 +233,7 @@ function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $f
                 },
                 {
                   "type": "postback",
-                  "title": "重新製作卡片",
+                  "title": "重新做一張卡片",
                   "payload": "我要做卡片"
                 },
                 {
@@ -424,7 +436,7 @@ $botman->hears('defaultTitle1', function(BotMan $bot) {
   $bot->userStorage()->save([
     'enterTitleFlag' => 0,
     'titleFlag' => 1,
-    'title' => '謝謝您無私的愛和包容！/母親節快樂！'
+    'title' => '謝謝您無私的愛和包容/母親節快樂！'
   ]);
   $bot->typesAndWaits(0.5);
   certifyReply($bot->userStorage(), $bot);
@@ -458,7 +470,7 @@ $botman->hears('defaultText1', function(BotMan $bot) {
   $bot->userStorage()->save([
     'enterTextFlag' => 0,
     'textFlag' => 1,
-    'text' => '感謝您無私的付出/在這特別的日子/送給您這張特製的小卡片/祝您母親節快樂'
+    'text' => '感謝您無怨無悔的付出/在這特別的日子/送給您這張特製的小卡片/祝您母親節快樂'
   ]);
   $bot->typesAndWaits(0.5);
   certifyReply($bot->userStorage(), $bot);
