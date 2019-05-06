@@ -21,7 +21,7 @@ require_once './src/autoloader.php';
 $config = [
   // Your driver-specific configuration
   'facebook' => [
-    'token' => 'EAAgFGCRdh0YBAFVC0zwxhzWSOY4rJXugLdV3FM8vOvwe34dLSCEoSVCcxKticr23MlrvvOl49tOFH83vJbnZB4avsJwSa4P8PCjKuJJJiVZBejEjx6YrS2TEZAIGpFkxxt6LFdnZAYDgA3n6353exXW5gCdhRNi3aiUC6QOEQQZDZD',
+    'token' => 'EAAgFGCRdh0YBAG1ZBUSAxMGhDJhB01l9WVu55PS5H4hZC7QMlrQkVNGF1nFYKc10LxnEd9QVbUTLfF2cjNOY9QNGxsseHwgrBjQbovzVMKfrgf0IzZBnzsaR60D1RQU3ZAfZBZBf4e62dFZCQGrO2semhEeLlEzWk5Ke3qx8zoVFwZDZD',
     'app_secret' => 'ee950085cfeacdd271ebaad5be3672aa',
     'verification'=>'happymothersdayudnforyou',
   ]
@@ -33,6 +33,47 @@ DriverManager::loadDriver(\BotMan\Drivers\Facebook\FacebookImageDriver::class);
 
 // Create an instance
 $botman = BotManFactory::create($config);
+
+
+
+
+
+
+
+
+
+
+
+
+// $input = json_decode(file_get_contents('php://input'), true);
+// $handle = fopen("comment_info.txt", "w");
+// fwrite($handle, $input['entry'][0]['messaging_referrals'][0]);
+// fclose($handle);
+// if (isset($input['entry'][0]['messaging'][0]['sender']['id'])) {
+//     $sender = $input['entry'][0]['messaging'][0]['sender']['id']; //sender facebook id
+//     $message = $input['entry'][0]['messaging'][0]['message']['text']; //text that user sent
+//     $handle = fopen("comment_info.txt", "w");
+//     fwrite($handle, $feedData);
+//     fclose($handle);
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 function saveImage($srcUrl, $distUrl, $fileName) {
   $completeSaveLocation = $distUrl . $fileName;
@@ -141,9 +182,9 @@ function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $f
   $editor->save($image1, 'users_data/cards_dist/mothersCard_' . $distPath);
 
   // 合成網頁大卡片
-  $editor->resizeFill($image1, 560, 560);
-  $editor->blend($image4, $image1, 'normal', 1, 'center', 0, 0);
-  $editor->save($image4, 'users_data/covers_dist/cover_' . $distPath);
+  // $editor->resizeFill($image1, 560, 560);
+  // $editor->blend($image4, $image1, 'normal', 1, 'center', 0, 0);
+  // $editor->save($image4, 'users_data/covers_dist/cover_' . $distPath);
 
   // 寫進資料庫
   // Database config
@@ -160,46 +201,39 @@ function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $f
 
 
   // 抓用戶性別等資料
-  $userDataUrl = 'https://graph.facebook.com/' . $fbId . '?fields=first_name,last_name,profile_pic,gender,locale,timezone&access_token=EAAgFGCRdh0YBAFVC0zwxhzWSOY4rJXugLdV3FM8vOvwe34dLSCEoSVCcxKticr23MlrvvOl49tOFH83vJbnZB4avsJwSa4P8PCjKuJJJiVZBejEjx6YrS2TEZAIGpFkxxt6LFdnZAYDgA3n6353exXW5gCdhRNi3aiUC6QOEQQZDZD';
+  $userDataUrl = 'https://graph.facebook.com/' . $fbId . '?fields=first_name,last_name,profile_pic,gender,locale,timezone&access_token=EAAgFGCRdh0YBAG1ZBUSAxMGhDJhB01l9WVu55PS5H4hZC7QMlrQkVNGF1nFYKc10LxnEd9QVbUTLfF2cjNOY9QNGxsseHwgrBjQbovzVMKfrgf0IzZBnzsaR60D1RQU3ZAfZBZBf4e62dFZCQGrO2semhEeLlEzWk5Ke3qx8zoVFwZDZD';
   $userDataContent = file_get_contents($userDataUrl);
   $userDataJson = json_decode($userDataContent, true);
   $userGender = $userDataJson['gender'];
   $userLocale = $userDataJson['locale'];
   $userTimezone = $userDataJson['timezone'];
 
+  $apiKey;
   $inputUserName = $fbUserName;
   $inputUserId = $fbId;
-  $inputImage = 'https://nmdap.udn.com.tw/newmedia/mothers_day_bot/users_data/cards_dist/mothersCard_' . $distPath;
-  $inputCover = 'https://nmdap.udn.com.tw/newmedia/mothers_day_bot/users_data/covers_dist/cover_' . $distPath;
+  $inputImage = 'https://newmedia.udn.com.tw/mothers_day_bot/users_data/cards_dist/mothersCard_' . $distPath;
+  $inputCover = 'https://newmedia.udn.com.tw/mothers_day_bot/users_data/covers_dist/cover_' . $distPath;
 
-  $query = "SELECT usage_count FROM cards WHERE user_id=" . $inputUserId;
+  $query = "SELECT MAX(usage_count) AS usage_count FROM cards WHERE user_id=" . $inputUserId;
   $result = mysqli_query($conn, $query);
-
+  
   if (mysqli_num_rows($result) > 0) {
     while($row = $result->fetch_assoc()) {
       $updateCount = $row['usage_count'] + 1;
-      $sql = "UPDATE cards SET usage_count=" . $updateCount . " WHERE user_id=" . $inputUserId;
+      $apiKey = $inputUserId . '_' . $updateCount;
+      $sql =  "INSERT INTO cards (api_key, user_name, user_id, image, cover_image, gender, locale, time_zone, usage_count) VALUES ('" . $apiKey ."','" . $inputUserName . "','" . $inputUserId . "','" . $inputImage . "','" . $inputCover . "','" . $userGender . "','" . $userLocale . "','" . $userTimezone . "'," . $updateCount . ")";
       $conn->query($sql);
-      $sql2 = "UPDATE cards SET image='" . $inputImage . "' WHERE user_id=" . $inputUserId;
-      $conn->query($sql2);
-      $sql3 = "UPDATE cards SET cover_image='" . $inputCover . "' WHERE user_id=" . $inputUserId;
-      $conn->query($sql3);
-      $sql4 = "UPDATE cards SET updated_at=NOW() WHERE user_id=" . $inputUserId;
-      $conn->query($sql4);
     }
   } else {
-    $sql =  "INSERT INTO cards (user_name, user_id, image, cover_image, gender, locale, time_zone) VALUES ('" . $inputUserName . "', '" . $inputUserId . "', '" . $inputImage . "','" . $inputCover . "','" . $userGender . "','" . $userLocale . "','" . $userTimezone . "')";
-
+    $apiKey = $inputUserId . '_1';
+    $sql =  "INSERT INTO cards (api_key, user_name, user_id, image, cover_image, gender, locale, time_zone) VALUES ('" . $apiKey . "','" . $inputUserName . "','" . $inputUserId . "','" . $inputImage . "','" . $inputCover . "','" . $userGender . "','" . $userLocale . "','" . $userTimezone . "')";
     $conn->query($sql);
   }
 
   $conn->close();
 
-
-
-
   // 回覆連結 
-  $url = 'https://graph.facebook.com/v2.6/me/messages?access_token=EAAgFGCRdh0YBAFVC0zwxhzWSOY4rJXugLdV3FM8vOvwe34dLSCEoSVCcxKticr23MlrvvOl49tOFH83vJbnZB4avsJwSa4P8PCjKuJJJiVZBejEjx6YrS2TEZAIGpFkxxt6LFdnZAYDgA3n6353exXW5gCdhRNi3aiUC6QOEQQZDZD';
+  $url = 'https://graph.facebook.com/v2.6/me/messages?access_token=EAAgFGCRdh0YBAG1ZBUSAxMGhDJhB01l9WVu55PS5H4hZC7QMlrQkVNGF1nFYKc10LxnEd9QVbUTLfF2cjNOY9QNGxsseHwgrBjQbovzVMKfrgf0IzZBnzsaR60D1RQU3ZAfZBZBf4e62dFZCQGrO2semhEeLlEzWk5Ke3qx8zoVFwZDZD';
 
   $ch = curl_init($url);
   $jsonData = 
@@ -217,18 +251,18 @@ function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $f
           [
             {
               "title": "2019聯合報粉絲頁母親節卡片",
-              "image_url": "https://nmdap.udn.com.tw/newmedia/mothers_day_bot/users_data/cards_dist/mothersCard_' . $distPath .'",
+              "image_url": "https://newmedia.udn.com.tw/mothers_day_bot/users_data/cards_dist/mothersCard_' . $distPath .'",
               "subtitle": "",
               "default_action": {
                 "type": "web_url",
-                "url": "https://nmdap.udn.com.tw/newmedia/mothers_day_bot/users_data/cards_dist/mothersCard_' . $distPath .'",
+                "url": "https://newmedia.udn.com.tw/mothers_day_bot/users_data/cards_dist/mothersCard_' . $distPath .'",
                 "messenger_extensions": false,
                 "webview_height_ratio": "tall",
               },
               "buttons": [
                 {
                   "type": "web_url",
-                  "url": "http://nmdap.udn.com.tw/upf/newmedia/2019_data/lovecard/#' . $inputUserId . '",
+                  "url": "http://nmdap.udn.com.tw/upf/newmedia/2019_data/lovecard/#' . $apiKey . '",
                   "title": "觀看母親節卡片"
                 },
                 {
@@ -248,10 +282,10 @@ function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $f
                           {
                             "title": "2019聯合報粉絲頁母親節卡片",
                             "subtitle": "今年的母親節，你打算送媽媽、阿嬤或最照顧你的人什麼東西呢？不如傳給她一張有你們合照的小卡片吧！聯合報粉絲專頁的這個小活動，只要依步驟上傳一張你們的合照、寫上你想對她說的話，我們就可以幫你做好一張小卡，讓妳送給她喔！",
-                            "image_url": "https://nmdap.udn.com.tw/newmedia/mothers_day_bot/users_data/cards_dist/mothersCard_' . $distPath . '",
+                            "image_url": "https://newmedia.udn.com.tw/mothers_day_bot/users_data/cards_dist/mothersCard_' . $distPath . '",
                             "default_action": {
                               "type": "web_url",
-                              "url": "http://nmdap.udn.com.tw/upf/newmedia/2019_data/lovecard/#' . $inputUserId . '"
+                              "url": "http://nmdap.udn.com.tw/upf/newmedia/2019_data/lovecard/#' . $apiKey . '"
                             },
                             "buttons": [
                               {
@@ -279,22 +313,6 @@ function imageSynthesis($srcTitle, $srcText, $srcImage, $fbUserName, $userId, $f
   curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonData);
   curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
   $result = curl_exec($ch); // user will get the message
-
-  // $bot->reply(GenericTemplate::create()
-  //   ->addImageAspectRatio(GenericTemplate::RATIO_SQUARE)
-  //   ->addElements([
-  //     Element::create('印刷廠印製完成...')
-  //       ->subtitle('')
-  //       ->image('https://nmdap.udn.com.tw/newmedia/mothers_day_bot/users_data/cards_dist/mothersCard_' . $distPath)
-  //       ->addButton(ElementButton::create('分享卡片')
-  //         ->url('http://nmdap.udn.com.tw/upf/newmedia/2019_data/lovecard/#' . $inputUserId)
-  //       )
-  //       ->addButton(ElementButton::create('重新製作卡片')
-  //         ->payload('我要做卡片')
-  //         ->type('postback')
-  //       ),
-  //   ])
-  // );
 }
 
 function certifyReply($userStorage, $bot) {
@@ -324,9 +342,9 @@ function certifyReply($userStorage, $bot) {
     $bot->userStorage()->save([
       'enterImageFlag' => 1,
     ]);
-    $bot->reply(Question::create('STEP 3 : 點我要上傳，再選擇一張合照上傳，如果不上傳合照，可選擇使用預設圖片')->addButtons([
-      Button::create('我要上傳')->value('userInputImage'),
-      Button::create('預設圖片')->value('defaultImage1'),
+    $bot->reply(Question::create('STEP 3 : 可自行挑選一張喜愛的照片，再送出訊息，或使用預設照片')->addButtons([
+      Button::create('挑選照片')->value('userInputImage'),
+      Button::create('預設照片')->value('defaultImage1'),
     ]));
   } else {
     $bot->reply('💌卡片製作中，請稍候...');
@@ -346,43 +364,12 @@ function certifyReply($userStorage, $bot) {
   }
 }
 
-// $input = json_decode(file_get_contents('php://input'), true);
-// if (isset($input['entry'][0]['messaging'][0]['sender']['id'])) {
-//   $sender = $input['entry'][0]['messaging'][0]['sender']['id']; //sender facebook id
-//   $message = $input['entry'][0]['messaging'][0]['message']['text']; //text that user sent
-
-//   $handle = fopen("comment_info.txt", "w");
-//   fwrite($handle, $message);
-//   fclose($handle);
-
-//   $textArray = explode("\n", $message);
-//   $url = 'https://graph.facebook.com/v2.6/me/messages?access_token=EAAgFGCRdh0YBAFVC0zwxhzWSOY4rJXugLdV3FM8vOvwe34dLSCEoSVCcxKticr23MlrvvOl49tOFH83vJbnZB4avsJwSa4P8PCjKuJJJiVZBejEjx6YrS2TEZAIGpFkxxt6LFdnZAYDgA3n6353exXW5gCdhRNi3aiUC6QOEQQZDZD';
-
-//   /*initialize curl*/
-//   $ch = curl_init($url);
-//   /*prepare response*/
-//   $jsonData = '{
-//   "recipient":{
-//     "id":"' . $sender . '"
-//     },
-//     "message":{
-//       "text":"You said, ' . $textArray[1] . '"
-//     }
-//   }';
-//   /* curl setting to send a json post data */
-//   curl_setopt($ch, CURLOPT_POST, 1);
-//   curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonData);
-//   curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
-//   if (!empty($message)) {
-//     $result = curl_exec($ch); // user will get the message
-//   }
-// }
-
 // -----啟動-----
 $botman->hears('我要留言', function(BotMan $bot) {
   $bot->userStorage()->delete();
 });
 
+// 處理特別情境輸入
 $botman->hears('{text}', function(BotMan $bot, $text) {
   if ($text != '我要做卡片') {
     $enterTitleFlag = $bot->userStorage()->get('enterTitleFlag');
@@ -434,6 +421,7 @@ $botman->hears('{text}', function(BotMan $bot, $text) {
   }
 });
 
+// 進入點
 $botman->hears('我要做卡片', function(BotMan $bot) {
   $bot->userStorage()->delete();
 
@@ -442,25 +430,18 @@ $botman->hears('我要做卡片', function(BotMan $bot) {
     ->addImageAspectRatio(GenericTemplate::RATIO_SQUARE)
     ->addElements([
       Element::create('💌聯合報母親節卡片製作')
-        ->subtitle('本活動要依序上傳
-        1.「標題」
-        2.「感謝文」
-        3.「合照」
-        就可完成小卡片的製作。')
-        ->image('https://nmdap.udn.com.tw/newmedia/mothers_day_bot/card_materials/example4.png')
+        ->subtitle('依步驟進行，即可完成
+        1.輸入「標題」
+        2.輸入「感謝文」
+        3.輸入「合照」
+        ')
+        ->image('https://newmedia.udn.com.tw/mothers_day_bot/card_materials/example5.png')
+        ->addButton(ElementButton::create('開始製作卡片')
+        ->payload('開始製作卡片')
+        ->type('postback')
+      )
     ])
   );
-
-  // $bot->reply('❤️本活動要依序上傳
-  // 1.「標題」
-  // 2.「內文」
-  // 3.「合照」
-  // 就可完成小卡片的製作。
-  // （如下示意圖）');
-  // $bot->typesAndWaits(0.5);
-  // $attachment = new Image('https://nmdap.udn.com.tw/newmedia/mothers_day_bot/card_materials/example.png');
-  // $message = OutgoingMessage::create('')->withAttachment($attachment);
-  // $bot->reply($message);
 
   $user = $bot->getUser();
   $firstname = $user->getFirstName();
@@ -473,8 +454,6 @@ $botman->hears('我要做卡片', function(BotMan $bot) {
     'userId' => $hashId,
     'fbId' => $id,
   ]);
-
-  certifyReply($bot->userStorage(), $bot);
 });
 
 $botman->on('messaging_referrals', function($payload, BotMan $bot) {
@@ -487,26 +466,18 @@ $botman->on('messaging_referrals', function($payload, BotMan $bot) {
       ->addImageAspectRatio(GenericTemplate::RATIO_SQUARE)
       ->addElements([
         Element::create('💌聯合報母親節卡片製作')
-          ->subtitle('本活動要依序上傳
-          1.「標題」
-          2.「內文」
-          3.「合照」
-          就可完成小卡片的製作。')
-          ->image('https://nmdap.udn.com.tw/newmedia/mothers_day_bot/card_materials/example4.png')
+          ->subtitle('依步驟進行，即可完成
+          1.輸入「標題」
+          2.輸入「感謝文」
+          3.輸入「合照」')
+          ->image('https://newmedia.udn.com.tw/mothers_day_bot/card_materials/example5.png')
+          ->addButton(ElementButton::create('開始製作卡片')
+          ->payload('開始製作卡片')
+          ->type('postback')
+        )
       ])
     );
-  
-    // $bot->reply('❤️本活動要依序上傳
-    // 1.「標題」
-    // 2.「內文」
-    // 3.「合照」
-    // 就可完成小卡片的製作。
-    // （如下示意圖）');
-    // $bot->typesAndWaits(0.5);
-    // $attachment = new Image('https://nmdap.udn.com.tw/newmedia/mothers_day_bot/card_materials/example.png');
-    // $message = OutgoingMessage::create('')->withAttachment($attachment);
-    // $bot->reply($message);
-  
+   
     $user = $bot->getUser();
     $firstname = $user->getFirstName();
     $lastname = $user->getLastName();
@@ -518,9 +489,11 @@ $botman->on('messaging_referrals', function($payload, BotMan $bot) {
       'userId' => $hashId,
       'fbId' => $id,
     ]);
-  
-    certifyReply($bot->userStorage(), $bot);
   }
+});
+
+$botman->hears('開始製作卡片', function(BotMan $bot) {
+  certifyReply($bot->userStorage(), $bot);
 });
 
 // -----Step 1-----
@@ -588,7 +561,7 @@ $botman->hears('userInputImage', function(BotMan $bot) {
     'userInputImageFlag' => 1,
   ]);
 
-  $bot->reply('❤️請選擇一張合照（建議上傳直式照片）');
+  $bot->reply('❤️請自行從手機或桌機相本內，挑選一張喜愛的照片，或手機即時拍照，再送出訊息（建議使用直式照片）');
 });
 
 // 接收使用者輸入圖片
@@ -612,6 +585,11 @@ $botman->receivesImages(function(BotMan $bot, $images) {
       certifyReply($bot->userStorage(), $bot);
     }
   }
+});
+
+$botman->hears('downloadImage', function(Botman $bot) {
+  $bot->reply('💌卡片傳送中...');
+  
 });
 
 
